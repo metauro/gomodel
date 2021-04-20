@@ -138,9 +138,7 @@ func getTables() []string {
 		}
 
 		tables = make([]string, 0)
-		if err := survey.AskOne(prompt, &tables, survey.WithPageSize(10)); err != nil {
-			panic(err)
-		}
+		_ = survey.AskOne(prompt, &tables, survey.WithPageSize(10))
 		return tables
 	}
 
