@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="66e00b4a-0999-42ed-8a46-6ebafe5cf22e" name="Default Changelist" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file:///usr/local/Cellar/go/1.16.2/libexec" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="GoLibraries">
+    <option name="indexEntireGoPath" value="false" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="2p5y689h" />
+  </component>
+  <component name="ProjectId" id="1q6wvAJ9TuHjr88GWPUqvSw9HBk" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="DefaultGoTemplateProperty" value="Go File" />
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.sdk.automatically.set" value="true" />
+    <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
+    <property name="node.js.detected.package.eslint" value="true" />
+    <property name="node.js.detected.package.tslint" value="true" />
+    <property name="node.js.path.for.package.eslint" value="project" />
+    <property name="node.js.path.for.package.tslint" value="project" />
+    <property name="node.js.selected.package.eslint" value="(autodetect)" />
+    <property name="node.js.selected.package.tslint" value="(autodetect)" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="$USER_HOME$/.nvm/versions/node/v7.10.0/bin/node" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="nodejs_package_manager_path" value="npm" />
+    <property name="project.structure.last.edited" value="Project" />
+    <property name="project.structure.proportion" value="0.17" />
+    <property name="project.structure.side.proportion" value="0.0" />
+    <property name="settings.editor.selected.configurable" value="android.project.structure" />
+    <property name="vue.rearranger.settings.migration" value="true" />
+  </component>
+  <component name="RebelAgentSelection">
+    <selection>jr</selection>
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/cli" />
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/cmd" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="ArquillianJUnit" factoryName="" nameIsGenerated="true">
+      <option name="arquillianRunConfiguration">
+        <value>
+          <option name="containerStateName" value="" />
+        </value>
+      </option>
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="66e00b4a-0999-42ed-8a46-6ebafe5cf22e" name="Default Changelist" comment="" />
+      <created>1616413577656</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1616413577656</updated>
+      <workItem from="1616413578309" duration="1195000" />
+      <workItem from="1616424414706" duration="3000" />
+      <workItem from="1616424419299" duration="1539000" />
+      <workItem from="1616426034562" duration="5162000" />
+      <workItem from="1616474706216" duration="76000" />
+      <workItem from="1616475069904" duration="2699000" />
+      <workItem from="1616478918388" duration="935000" />
+      <workItem from="1616510802469" duration="292000" />
+      <workItem from="1616513211497" duration="910000" />
+      <workItem from="1616515203916" duration="654000" />
+      <workItem from="1616515971790" duration="202000" />
+      <workItem from="1616516212906" duration="7249000" />
+      <workItem from="1616550351157" duration="313000" />
+      <workItem from="1616561035606" duration="5499000" />
+      <workItem from="1616571007487" duration="381000" />
+      <workItem from="1616572424206" duration="3170000" />
+      <workItem from="1616577255117" duration="290000" />
+      <workItem from="1616578397561" duration="1059000" />
+      <workItem from="1616595295969" duration="457000" />
+      <workItem from="1616637119856" duration="1912000" />
+      <workItem from="1616728081065" duration="1370000" />
+      <workItem from="1616944484609" duration="2923000" />
+      <workItem from="1616984022530" duration="1000" />
+      <workItem from="1617073366540" duration="867000" />
+      <workItem from="1617099048707" duration="551000" />
+      <workItem from="1617100025711" duration="2011000" />
+      <workItem from="1617115648140" duration="2433000" />
+      <workItem from="1617260842982" duration="914000" />
+      <workItem from="1617262546446" duration="62000" />
+      <workItem from="1617262611089" duration="2848000" />
+      <workItem from="1617267810789" duration="542000" />
+      <workItem from="1617291576707" duration="3828000" />
+      <workItem from="1617873464943" duration="6136000" />
+      <workItem from="1617953660763" duration="3754000" />
+      <workItem from="1618198255202" duration="835000" />
+      <workItem from="1618388276184" duration="583000" />
+      <workItem from="1618389872471" duration="1567000" />
+      <workItem from="1618391683258" duration="305000" />
+      <workItem from="1618392078396" duration="958000" />
+      <workItem from="1618453493184" duration="206000" />
+      <workItem from="1618472537583" duration="30000" />
+      <workItem from="1618479288621" duration="1869000" />
+      <workItem from="1618554127175" duration="11844000" />
+      <workItem from="1618830251547" duration="655000" />
+      <workItem from="1618842621581" duration="891000" />
+      <workItem from="1618905400273" duration="817000" />
+      <workItem from="1618909379521" duration="2560000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>
