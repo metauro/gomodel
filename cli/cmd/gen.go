@@ -23,9 +23,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/iancoleman/strcase"
-	"github.com/manifoldco/promptui"
-	"github.com/metauro/gomodel/cli/db"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
@@ -51,7 +50,6 @@ type Model struct {
 	Fields      []*Field
 }
 
-var pool = db.DB()
 var prefix = ""
 var ignorePrefix = false
 
@@ -118,7 +116,7 @@ func init() {
 }
 
 func getTables() []string {
-	rows, err := pool.Queryx("SHOW TABLES")
+	rows, err := db.Queryx("SHOW TABLES")
 	if err != nil {
 		panic(err)
 	}
@@ -133,15 +131,16 @@ func getTables() []string {
 
 	// 选择指定的表生成
 	if prefix == "" {
-		prompt := promptui.Select{
-			Label: "请选择要生成的表",
-			Items: tables,
+		prompt := &survey.MultiSelect{
+			Message:  "请选择要生成的表",
+			Options:  tables,
+			PageSize: 10,
 		}
-		_, table, err := prompt.Run()
-		if err != nil {
+
+		tables = make([]string, 0)
+		if err := survey.AskOne(prompt, &tables, survey.WithPageSize(10)); err != nil {
 			panic(err)
 		}
-		tables = []string{table}
 		return tables
 	}
 
@@ -158,7 +157,7 @@ func getTables() []string {
 }
 
 func getColumnsFromTable(table string) []*Field {
-	rows, err := pool.Queryx(fmt.Sprintf("SHOW FULL COLUMNS FROM `%s`", table))
+	rows, err := db.Queryx(fmt.Sprintf("SHOW FULL COLUMNS FROM `%s`", table))
 	if err != nil {
 		panic(err)
 	}

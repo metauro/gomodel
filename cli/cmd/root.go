@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/jmoiron/sqlx"
+	"github.com/metauro/gomodel/cli/msql"
 	"github.com/spf13/cobra"
 	"os"
 
@@ -25,6 +27,7 @@ import (
 )
 
 var cfgFile string
+var db *sqlx.DB
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -65,7 +68,17 @@ func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		_, _ = fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		panic(err)
 	}
+	_, _ = fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+
+	type Config struct {
+		SQL *msql.Config
+	}
+	config := &Config{}
+	if err := viper.Unmarshal(config); err != nil {
+		panic(err)
+	}
+	db = msql.NewDB(config.SQL)
 }
