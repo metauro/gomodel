@@ -45,6 +45,7 @@ type Field struct {
 }
 
 type Model struct {
+	Pkg         string
 	Name        string
 	SQLName     string
 	Placeholder string
@@ -52,9 +53,10 @@ type Model struct {
 }
 
 var prefix = ""
-var ignorePrefix = false
+var appendPrefix = false
+var pkg = ""
 
-//go:embed model.tmpl
+//go:embed repo.tmpl
 var modelTemplate string
 
 // genCmd represents the gen command
@@ -65,6 +67,7 @@ var genCmd = &cobra.Command{
 		tables := getTables()
 		log.Printf("start generate %+v\n", tables)
 		escapeChar := "`"
+
 		tmpl := template.Must(template.New("model").Funcs(template.FuncMap{
 			"toSnake": func(s string) string {
 				return strcase.ToSnake(s)
@@ -85,22 +88,23 @@ var genCmd = &cobra.Command{
 
 		for _, table := range tables {
 			name := table
-			if ignorePrefix && prefix != "" && strings.HasPrefix(name, prefix) {
+			if !appendPrefix && prefix != "" && strings.HasPrefix(name, prefix) {
 				name = name[len(prefix):]
 			}
-			if err := os.MkdirAll("model", 0755); err != nil {
+			if err := os.MkdirAll(pkg, 0755); err != nil {
 				panic(err)
 			}
-			file, err := os.OpenFile(fmt.Sprintf("model/%s.gen.go", name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+			file, err := os.OpenFile(fmt.Sprintf("%s/%s.gen.go", pkg, name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 				os.ModePerm)
 			if err != nil {
 				panic(err)
 			}
 			name = strcase.ToCamel(name)
 			if err := tmpl.Execute(file, &Model{
+				Pkg:         pkg,
 				Name:        name,
 				SQLName:     table,
-				Fields:      getColumnsFromTable(table),
+				Fields:      getFieldsFromTable(table),
 				Placeholder: "?",
 			}); err != nil {
 				panic(err)
@@ -115,8 +119,9 @@ var genCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(genCmd)
-	genCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "spec table prefix")
-	genCmd.Flags().BoolVarP(&ignorePrefix, "ignore-prefix", "i", true, "生成的表名是否忽略前缀")
+	genCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "生成指定前缀的表")
+	genCmd.Flags().BoolVar(&appendPrefix, "append-prefix", false, "生成的表名是否忽略前缀")
+	genCmd.Flags().StringVar(&pkg, "package", "repo", "包名")
 }
 
 func getTables() []string {
@@ -158,7 +163,7 @@ func getTables() []string {
 	return result
 }
 
-func getColumnsFromTable(table string) []*Field {
+func getFieldsFromTable(table string) []*Field {
 	rows, err := db.Queryx(fmt.Sprintf("SHOW FULL COLUMNS FROM `%s`", table))
 	if err != nil {
 		panic(err)
