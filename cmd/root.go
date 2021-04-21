@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
-	"github.com/metauro/gomodel/msql"
+	"github.com/metauro/gomodel/internal/msql"
 	"github.com/spf13/cobra"
 	"os"
 

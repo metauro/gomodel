@@ -22,6 +22,7 @@ THE SOFTWARE.
 package cmd
 
 import (
+	_ "embed"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/iancoleman/strcase"
@@ -53,6 +54,9 @@ type Model struct {
 var prefix = ""
 var ignorePrefix = false
 
+//go:embed model.tmpl
+var modelTemplate string
+
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
@@ -61,7 +65,7 @@ var genCmd = &cobra.Command{
 		tables := getTables()
 		log.Printf("start generate %+v\n", tables)
 		escapeChar := "`"
-		tmpl := template.Must(template.New("model.tmpl").Funcs(template.FuncMap{
+		tmpl := template.Must(template.New("model").Funcs(template.FuncMap{
 			"toSnake": func(s string) string {
 				return strcase.ToSnake(s)
 			},
@@ -77,7 +81,7 @@ var genCmd = &cobra.Command{
 			"newSlice": func(args ...interface{}) interface{} {
 				return args
 			},
-		}).ParseFiles("model.tmpl"))
+		}).Parse(modelTemplate))
 
 		for _, table := range tables {
 			name := table
