@@ -479,7 +479,7 @@ func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$modelName}} {
   return res
 }
 
-// MustGetOrFailContext 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+// MustGetOrFailContext 获取单条数据,有错误时 panic
 func (r *{{$selectRepo}}) MustGetOrFailContext(ctx context.Context) *{{$modelName}} {
   res, err := r.GetContext(ctx)
   if err != nil {
@@ -498,11 +498,12 @@ func (r *{{$selectRepo}}) MustGet() *{{$modelName}} {
   return r.MustGetContext(context.Background())
 }
 
-// MustGetOrFail 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+// MustGetOrFail 获取单条数据,有错误时 panic
 func (r *{{$selectRepo}}) MustGetOrFail() *{{$modelName}} {
   return r.MustGetOrFailContext(context.Background())
 }
 
+// SelectContext 获取多条数据
 func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$modelName}}, error) {
 	var err error
 	rows, err := r.db.QueryContext(ctx, r.sqlBuilder.String(), r.bindings...)
@@ -535,6 +536,7 @@ func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$modelName}},
 	return res, nil
 }
 
+// MustSelectContext 获取多条数据,有错误时 panic
 func (r *{{$selectRepo}}) MustSelectContext(ctx context.Context) []*{{$modelName}} {
   res, err := r.SelectContext(ctx)
   if err != nil {
@@ -543,10 +545,12 @@ func (r *{{$selectRepo}}) MustSelectContext(ctx context.Context) []*{{$modelName
   return res
 }
 
+// Select 获取多条数据
 func (r *{{$selectRepo}}) Select() ([]*{{$modelName}}, error) {
   return r.SelectContext(context.Background())
 }
 
+// MustSelect 获取多条数据,有错误时 panic
 func (r *{{$selectRepo}}) MustSelect() []*{{$modelName}} {
   return r.MustSelectContext(context.Background())
 }
@@ -571,6 +575,7 @@ func (r *{{$repo}}) setCheck() {
    r.first = false
 }
 
+// Set 将数据更新为 {{$modelName | camelCase}} 内的值,零值会被忽略
 func (r *{{$repo}}) Set({{$modelName | camelCase}} *{{$modelName}}) *{{$repo}} {
   {{- range $i, $field := $.Fields}}
   {{$field.ParamName}} := {{$modelName | camelCase}}.{{$field.StructName}}
@@ -584,6 +589,7 @@ func (r *{{$repo}}) Set({{$modelName | camelCase}} *{{$modelName}}) *{{$repo}} {
 }
 
 {{range $.Fields -}}
+// Set{{.StructName}}Empty 将字段更新为零值
 func (r *{{$repo}}) Set{{.StructName}}Empty() *{{$repo}} {
   r.setCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}={{$.Placeholder}}")
@@ -591,12 +597,14 @@ func (r *{{$repo}}) Set{{.StructName}}Empty() *{{$repo}} {
   return r
 }
 
+// Set{{.StructName}}Nil 将字段更新为 nil
 func (r *{{$repo}}) Set{{.StructName}}Nil() *{{$repo}} {
   r.setCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}=NULL")
   return r
 }
 
+// Set{{.StructName}}Raw 自定义更新语句
 func (r *{{$repo}}) Set{{.StructName}}Raw(sql string, bindings ...interface{}) *{{$repo}} {
   r.setCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} ")
