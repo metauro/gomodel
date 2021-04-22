@@ -451,6 +451,7 @@ func (r *{{$repo}}) MustExec() int64 {
 }
 {{end}}
 
+// GetContext 获取单条数据
 func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$modelName}}, error) {
 	row := r.db.QueryRowContext(ctx, r.sqlBuilder.String(), r.bindings...)
 	m := &{{$modelName}}{}
@@ -466,6 +467,7 @@ func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$modelName}}, erro
 	return m, row.Scan(scanners...)
 }
 
+// MustGetContext 获取单条数据,如果返回 sql.ErrNoRows 错误则返回 nil, 其他错误则 panic
 func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$modelName}} {
   res, err := r.GetContext(ctx)
   if err != nil {
@@ -477,12 +479,28 @@ func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$modelName}} {
   return res
 }
 
+// MustGetOrFailContext 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+func (r *{{$selectRepo}}) MustGetOrFailContext(ctx context.Context) *{{$modelName}} {
+  res, err := r.GetContext(ctx)
+  if err != nil {
+    panic(err)
+  }
+  return res
+}
+
+// Get 获取单条数据
 func (r *{{$selectRepo}}) Get() (*{{$modelName}}, error) {
   return r.GetContext(context.Background())
 }
 
+// MustGet 获取单条数据,如果返回 sql.ErrNoRows 错误则返回 nil, 其他错误则 panic
 func (r *{{$selectRepo}}) MustGet() *{{$modelName}} {
   return r.MustGetContext(context.Background())
+}
+
+// MustGetOrFail 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+func (r *{{$selectRepo}}) MustGetOrFail() *{{$modelName}} {
+  return r.MustGetOrFailContext(context.Background())
 }
 
 func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$modelName}}, error) {
