@@ -5,6 +5,7 @@ import (
   "strings"
   "time"
   "github.com/metauro/gomodel"
+  "database/sql"
 )
 
 var _ = time.Time{}
@@ -468,6 +469,9 @@ func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$modelName}}, erro
 func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$modelName}} {
   res, err := r.GetContext(ctx)
   if err != nil {
+    if err == sql.ErrNoRows {
+      return nil
+    }
     panic(err)
   }
   return res
