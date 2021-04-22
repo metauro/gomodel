@@ -76,8 +76,11 @@ var genCmd = &cobra.Command{
 			"escape": func(s string) string {
 				return fmt.Sprintf("%s%s%s", escapeChar, s, escapeChar)
 			},
-			"toLowerCamel": func(s string) string {
+			"camelCase": func(s string) string {
 				return strcase.ToLowerCamel(s)
+			},
+			"titleCase": func(s string) string {
+				return strcase.ToCamel(s)
 			},
 			"stringsJoin": func(elems []string, sep string) string {
 				return strings.Join(elems, sep)
