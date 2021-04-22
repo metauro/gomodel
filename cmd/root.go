@@ -80,5 +80,5 @@ func initConfig() {
 	if err := viper.Unmarshal(config); err != nil {
 		panic(err)
 	}
-	db = msql.NewDB(config.SQL)
+	db = msql.Open(config.SQL)
 }
