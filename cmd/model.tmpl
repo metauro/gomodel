@@ -25,7 +25,7 @@ type {{.Name}} struct {
 {{end -}}
 }
 
-{{$repo := (print (.Name | toLowerCamel) "Repo" ) -}}
+{{$repo := (print (.Name | camelCase) "Repo" ) -}}
 {{- $selectRepo := (print "select" .Name "Repo") -}}
 {{- $insertRepo := (print "insert" .Name "Repo") -}}
 {{- $updateRepo := (print "update" .Name "Repo") -}}
@@ -191,9 +191,9 @@ omit:
 	return res
 }
 
-{{$param := .Name | toLowerCamel}}
+{{$param := .Name | camelCase}}
 {{$paramList := (printf "%s%s" $param "List")}}
-func (r *{{$repo}}) Insert({{$paramList}} ...{{.Name}}) *{{$insertRepo}} {
+func (r *{{$repo}}) Insert({{$paramList}} ...*{{.Name}}) *{{$insertRepo}} {
   res :=  &{{$insertRepo}} {
     db: r.db,
   }
@@ -571,9 +571,9 @@ func (r *{{$repo}}) setCheck() {
    r.first = false
 }
 
-func (r *{{$repo}}) Set({{$modelName}} {{$.Name}}) *{{$repo}} {
+func (r *{{$repo}}) Set({{$modelName | camelCase}} *{{$modelName}}) *{{$repo}} {
   {{- range $i, $field := $.Fields}}
-  {{$field.ParamName}} := {{$modelName}}.{{$field.StructName}}
+  {{$field.ParamName}} := {{$modelName | camelCase}}.{{$field.StructName}}
   if {{if eq $field.Type "time.Time"}}!{{$field.ParamName}}.IsZero(){{else}}{{$field.ParamName}} != {{$field.ZeroValue}}{{end}} {
     r.setCheck()
     r.sqlBuilder.WriteString(" {{$field.SQLName}}={{$.Placeholder}}")
