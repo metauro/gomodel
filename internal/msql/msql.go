@@ -15,7 +15,7 @@ type Config struct {
 	Database string
 }
 
-func NewDB(c *Config) *sqlx.DB {
+func Open(c *Config) *sqlx.DB {
 	db, err := sqlx.Connect(c.Type, fmt.Sprintf("%s:%s@(%s:%d)/%s?parseTime=true", c.Username, c.Password, c.Host,
 		c.Port, c.Database))
 	if err != nil {
