@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"database/sql"
 	"github.com/metauro/gomodel"
 	"strings"
 	"time"
@@ -177,7 +178,7 @@ omit:
 	return res
 }
 
-func (r *testRepo) Insert(testList ...Test) *insertTestRepo {
+func (r *testRepo) Insert(testList ...*Test) *insertTestRepo {
 	res := &insertTestRepo{
 		db: r.db,
 	}
@@ -1531,24 +1532,38 @@ func (r *deleteTestRepo) MustExec() int64 {
 	return r.MustExecContext(context.Background())
 }
 
+// GetContext 获取单条数据
 func (r *selectTestRepo) GetContext(ctx context.Context) (*Test, error) {
 	row := r.db.QueryRowContext(ctx, r.sqlBuilder.String(), r.bindings...)
 	m := &Test{}
 	scanners := make([]interface{}, len(r.fields))
 	for i, field := range r.fields {
 		switch field {
-		case "`id`}":
+		case "`id`":
 			scanners[i] = &m.Id
-		case "`create_at`}":
+		case "`create_at`":
 			scanners[i] = &m.CreateAt
-		case "`update_at`}":
+		case "`update_at`":
 			scanners[i] = &m.UpdateAt
 		}
 	}
 	return m, row.Scan(scanners...)
 }
 
+// MustGetContext 获取单条数据,如果返回 sql.ErrNoRows 错误则返回 nil, 其他错误则 panic
 func (r *selectTestRepo) MustGetContext(ctx context.Context) *Test {
+	res, err := r.GetContext(ctx)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		panic(err)
+	}
+	return res
+}
+
+// MustGetOrFailContext 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+func (r *selectTestRepo) MustGetOrFailContext(ctx context.Context) *Test {
 	res, err := r.GetContext(ctx)
 	if err != nil {
 		panic(err)
@@ -1556,12 +1571,19 @@ func (r *selectTestRepo) MustGetContext(ctx context.Context) *Test {
 	return res
 }
 
+// Get 获取单条数据
 func (r *selectTestRepo) Get() (*Test, error) {
 	return r.GetContext(context.Background())
 }
 
+// MustGet 获取单条数据,如果返回 sql.ErrNoRows 错误则返回 nil, 其他错误则 panic
 func (r *selectTestRepo) MustGet() *Test {
 	return r.MustGetContext(context.Background())
+}
+
+// MustGetOrFail 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+func (r *selectTestRepo) MustGetOrFail() *Test {
+	return r.MustGetOrFailContext(context.Background())
 }
 
 func (r *selectTestRepo) SelectContext(ctx context.Context) ([]*Test, error) {
@@ -1633,22 +1655,22 @@ func (r *updateTestRepo) setCheck() {
 	r.first = false
 }
 
-func (r *updateTestRepo) Set(Test Test) *updateTestRepo {
-	id := Test.Id
+func (r *updateTestRepo) Set(test *Test) *updateTestRepo {
+	id := test.Id
 	if id != 0 {
 		r.setCheck()
 		r.sqlBuilder.WriteString(" `id`=?")
 		r.bindings = append(r.bindings, id)
 	}
 
-	createAt := Test.CreateAt
+	createAt := test.CreateAt
 	if !createAt.IsZero() {
 		r.setCheck()
 		r.sqlBuilder.WriteString(" `create_at`=?")
 		r.bindings = append(r.bindings, createAt)
 	}
 
-	updateAt := Test.UpdateAt
+	updateAt := test.UpdateAt
 	if !updateAt.IsZero() {
 		r.setCheck()
 		r.sqlBuilder.WriteString(" `update_at`=?")
@@ -1728,22 +1750,22 @@ func (r *duplicateTestRepo) setCheck() {
 	r.first = false
 }
 
-func (r *duplicateTestRepo) Set(Test Test) *duplicateTestRepo {
-	id := Test.Id
+func (r *duplicateTestRepo) Set(test *Test) *duplicateTestRepo {
+	id := test.Id
 	if id != 0 {
 		r.setCheck()
 		r.sqlBuilder.WriteString(" `id`=?")
 		r.bindings = append(r.bindings, id)
 	}
 
-	createAt := Test.CreateAt
+	createAt := test.CreateAt
 	if !createAt.IsZero() {
 		r.setCheck()
 		r.sqlBuilder.WriteString(" `create_at`=?")
 		r.bindings = append(r.bindings, createAt)
 	}
 
-	updateAt := Test.UpdateAt
+	updateAt := test.UpdateAt
 	if !updateAt.IsZero() {
 		r.setCheck()
 		r.sqlBuilder.WriteString(" `update_at`=?")
