@@ -457,7 +457,7 @@ func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$modelName}}, erro
 	for i, field := range r.fields {
     switch field {
       {{range $field := .Fields -}}
-      case "{{$field.SQLName}}}":
+      case "{{$field.SQLName}}":
         scanners[i] = &m.{{$field.StructName}}
       {{end -}}
     }
