@@ -32,7 +32,7 @@ var db *sqlx.DB
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "gomodel",
-	Short: "A model crud code generator",
+	Short: "模型代码生成器",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -47,7 +47,8 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gomodel.yaml)")
+	// Find home directory.
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "配置文件 (default is $HOME/.gomodel.toml)")
 }
 
 // initConfig reads in config file and ENV variables if set.

@@ -54,15 +54,16 @@ type Model struct {
 
 var prefix = ""
 var appendPrefix = false
+var selectAllTable = false
 var pkg = ""
 
-//go:embed repo.tmpl
+//go:embed model.tmpl
 var modelTemplate string
 
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
-	Short: "generate model repository",
+	Short: "根据表结构生成模型代码",
 	Run: func(cmd *cobra.Command, args []string) {
 		tables := getTables()
 		log.Printf("start generate %+v\n", tables)
@@ -123,9 +124,10 @@ var genCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(genCmd)
-	genCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "生成指定前缀的表")
-	genCmd.Flags().BoolVar(&appendPrefix, "append-prefix", false, "生成的表名是否忽略前缀")
+	genCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "选择指定前缀的表")
+	genCmd.Flags().BoolVar(&appendPrefix, "append-prefix", false, "生成的表名加上前缀")
 	genCmd.Flags().StringVar(&pkg, "package", "repo", "包名")
+	genCmd.Flags().BoolVarP(&selectAllTable, "all", "a", false, "选择全部表")
 }
 
 func getTables() []string {
@@ -142,7 +144,12 @@ func getTables() []string {
 		tables = append(tables, str)
 	}
 
-	// 选择指定的表生成
+	// 生成全部表
+	if selectAllTable {
+		return tables
+	}
+
+	// 如果没有指定前缀,则用户手动选择要生成的表
 	if prefix == "" {
 		prompt := &survey.MultiSelect{
 			Message:  "请选择要生成的表",
@@ -155,6 +162,7 @@ func getTables() []string {
 		return tables
 	}
 
+	// 按前缀筛选
 	result := make([]string, 0)
 	for _, table := range tables {
 		if !strings.HasPrefix(table, prefix) {
