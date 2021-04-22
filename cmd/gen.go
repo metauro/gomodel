@@ -109,11 +109,15 @@ var genCmd = &cobra.Command{
 			}); err != nil {
 				panic(err)
 			}
+			log.Printf("generate %s success\n", table)
 		}
 
+		log.Println("start format code")
 		if err := exec.Command("go", "fmt", "./...").Run(); err != nil {
 			panic(err)
 		}
+		log.Println("format code success")
+		log.Println("generate done")
 	},
 }
 
