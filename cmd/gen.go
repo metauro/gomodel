@@ -126,7 +126,7 @@ func init() {
 	rootCmd.AddCommand(genCmd)
 	genCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "选择指定前缀的表")
 	genCmd.Flags().BoolVar(&appendPrefix, "append-prefix", false, "生成的表名加上前缀")
-	genCmd.Flags().StringVar(&pkg, "package", "repo", "包名")
+	genCmd.Flags().StringVar(&pkg, "package", "model", "包名")
 	genCmd.Flags().BoolVarP(&selectAllTable, "all", "a", false, "选择全部表")
 }
 
