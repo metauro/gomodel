@@ -50,6 +50,5 @@ func init() {
 func initConfig() {
 	config, err := NewConfig()
 	cobra.CheckErr(err)
-	config.MySQL.Type = "mysql"
 	db = msql.Open(config.MySQL)
 }

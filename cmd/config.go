@@ -12,6 +12,14 @@ type Config struct {
 }
 
 func NewConfig() (*Config, error) {
+	viper.SetDefault("mysql", map[string]interface{}{
+		"Username": "root",
+		"Password": "root",
+		"Type":     "mysql",
+		"Host":     "localhost",
+		"Port":     3306,
+	})
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
