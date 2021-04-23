@@ -12,7 +12,7 @@ func init() {
 
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "获取版本信息",
+	Short: "Print the version",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(gomodel.VERSION)
 	},

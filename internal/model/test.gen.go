@@ -8,22 +8,28 @@ import (
 	"time"
 )
 
-var _ = time.Time{}
+var _ = time.Second
 
 const TestFieldId = "`id`"
 const TestFieldCreateAt = "`create_at`"
 const TestFieldUpdateAt = "`update_at`"
+const TestFieldKey = "`key`"
+const TestFieldDeleteAt = "`delete_at`"
 
 var TestFields = []string{
 	TestFieldId,
 	TestFieldCreateAt,
 	TestFieldUpdateAt,
+	TestFieldKey,
+	TestFieldDeleteAt,
 }
 
 type Test struct {
-	Id       int       `db:"id"`
-	CreateAt time.Time `db:"create_at"`
-	UpdateAt time.Time `db:"update_at"`
+	Id       int       `json:"id" db:"id"`
+	CreateAt time.Time `json:"create_at" db:"create_at"`
+	UpdateAt time.Time `json:"update_at" db:"update_at"`
+	Key      string    `json:"key" db:"key"`
+	DeleteAt time.Time `json:"delete_at" db:"delete_at"`
 }
 
 type testRepo struct {
@@ -83,7 +89,7 @@ func (r *testRepo) Select() *selectTestRepo {
 		db:     r.db,
 		fields: TestFields,
 	}
-	res.sqlBuilder.WriteString("SELECT `id`,`create_at`,`update_at` FROM `test` ")
+	res.sqlBuilder.WriteString("SELECT `id`,`create_at`,`update_at`,`key`,`delete_at` FROM `test` ")
 	return res
 }
 
@@ -92,7 +98,7 @@ func (r *testRepo) SelectDistinct() *selectTestRepo {
 		db:     r.db,
 		fields: TestFields,
 	}
-	res.sqlBuilder.WriteString("SELECT DISTINCT `id`,`create_at`,`update_at` FROM `test` ")
+	res.sqlBuilder.WriteString("SELECT DISTINCT `id`,`create_at`,`update_at`,`key`,`delete_at` FROM `test` ")
 	return res
 }
 
@@ -182,7 +188,7 @@ func (r *testRepo) Insert(testList ...*Test) *insertTestRepo {
 	res := &insertTestRepo{
 		db: r.db,
 	}
-	res.sqlBuilder.WriteString("INSERT INTO `test` (`id`,`create_at`,`update_at`) VALUES ")
+	res.sqlBuilder.WriteString("INSERT INTO `test` (`id`,`create_at`,`update_at`,`key`,`delete_at`) VALUES ")
 	for i, m := range testList {
 		if i > 0 {
 			res.sqlBuilder.WriteString(",")
@@ -206,6 +212,18 @@ func (r *testRepo) Insert(testList ...*Test) *insertTestRepo {
 			res.sqlBuilder.WriteString(",?")
 			res.bindings = append(res.bindings, m.UpdateAt)
 		}
+		if m.Key == "" {
+			res.sqlBuilder.WriteString(",DEFAULT")
+		} else {
+			res.sqlBuilder.WriteString(",?")
+			res.bindings = append(res.bindings, m.Key)
+		}
+		if m.DeleteAt.IsZero() {
+			res.sqlBuilder.WriteString(",DEFAULT")
+		} else {
+			res.sqlBuilder.WriteString(",?")
+			res.bindings = append(res.bindings, m.DeleteAt)
+		}
 
 		res.sqlBuilder.WriteString(")")
 	}
@@ -221,11 +239,17 @@ func (r *testRepo) Update() *updateTestRepo {
 	return res
 }
 
-func (r *testRepo) Delete() *deleteTestRepo {
+func (r *testRepo) Delete(hardDelete bool) *deleteTestRepo {
 	res := &deleteTestRepo{
 		db: r.db,
 	}
-	res.sqlBuilder.WriteString("DELETE FROM `test` ")
+
+	if hardDelete {
+		res.sqlBuilder.WriteString("DELETE FROM `test` ")
+	} else {
+		res.sqlBuilder.WriteString("UPDATE `test` SET `delete_at`=?")
+		res.bindings = append(res.bindings, time.Now())
+	}
 	return res
 }
 
@@ -251,7 +275,7 @@ func (r *selectTestRepo) whereCheck() {
 	}
 
 	r.hasWhere = true
-	r.sqlBuilder.WriteString(" WHERE")
+	r.sqlBuilder.WriteString(" WHERE (`delete_at` IS NULL) AND")
 }
 
 func (r *selectTestRepo) WhereIdEqual(id int) *selectTestRepo {
@@ -548,6 +572,188 @@ func (r *selectTestRepo) WhereUpdateAtLessThenEqual(updateAt time.Time) *selectT
 	return r
 }
 
+func (r *selectTestRepo) WhereKeyEqual(key string) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyNotEqual(key string) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key`<>?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyIn(keyList ...string) *selectTestRepo {
+	size := len(keyList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, keyList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, keyList[size-1])
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyNotIn(keyList ...string) *selectTestRepo {
+	size := len(keyList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` NOT IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, keyList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, keyList[size-1])
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyIsNil() *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IS NULL")
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyIsNotNil() *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IS NOT NULL")
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyRaw(raw string, bindings ...interface{}) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyLike(key string) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` LIKE ?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *selectTestRepo) WhereKeyNotLike(key string) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` NOT LIKE ?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtEqual(deleteAt time.Time) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtNotEqual(deleteAt time.Time) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<>?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtIn(deleteAtList ...time.Time) *selectTestRepo {
+	size := len(deleteAtList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, deleteAtList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, deleteAtList[size-1])
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtNotIn(deleteAtList ...time.Time) *selectTestRepo {
+	size := len(deleteAtList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` NOT IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, deleteAtList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, deleteAtList[size-1])
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtIsNil() *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IS NULL")
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtIsNotNil() *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IS NOT NULL")
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtRaw(raw string, bindings ...interface{}) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtGreatThan(deleteAt time.Time) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`>?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtGreatThanEqual(deleteAt time.Time) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`>=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtLessThan(deleteAt time.Time) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *selectTestRepo) WhereDeleteAtLessThenEqual(deleteAt time.Time) *selectTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
 func (r *selectTestRepo) orderByCheck() {
 	if r.hasOrderBy {
 		r.sqlBuilder.WriteString(",")
@@ -626,6 +832,46 @@ func (r *selectTestRepo) OrderByUpdateAtRaw(raw string, bindings ...interface{})
 	return r
 }
 
+func (r *selectTestRepo) OrderByKeyAsc() *selectTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` ASC")
+	return r
+}
+
+func (r *selectTestRepo) OrderByKeyDesc() *selectTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` DESC")
+	return r
+}
+
+func (r *selectTestRepo) OrderByKeyRaw(raw string, bindings ...interface{}) *selectTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *selectTestRepo) OrderByDeleteAtAsc() *selectTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ASC")
+	return r
+}
+
+func (r *selectTestRepo) OrderByDeleteAtDesc() *selectTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` DESC")
+	return r
+}
+
+func (r *selectTestRepo) OrderByDeleteAtRaw(raw string, bindings ...interface{}) *selectTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
 func (r *selectTestRepo) Limit(limit int) *selectTestRepo {
 	r.sqlBuilder.WriteString(" LIMIT ?")
 	r.bindings = append(r.bindings, limit)
@@ -653,7 +899,7 @@ func (r *updateTestRepo) whereCheck() {
 	}
 
 	r.hasWhere = true
-	r.sqlBuilder.WriteString(" WHERE")
+	r.sqlBuilder.WriteString(" WHERE (`delete_at` IS NULL) AND")
 }
 
 func (r *updateTestRepo) WhereIdEqual(id int) *updateTestRepo {
@@ -950,6 +1196,188 @@ func (r *updateTestRepo) WhereUpdateAtLessThenEqual(updateAt time.Time) *updateT
 	return r
 }
 
+func (r *updateTestRepo) WhereKeyEqual(key string) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyNotEqual(key string) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key`<>?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyIn(keyList ...string) *updateTestRepo {
+	size := len(keyList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, keyList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, keyList[size-1])
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyNotIn(keyList ...string) *updateTestRepo {
+	size := len(keyList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` NOT IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, keyList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, keyList[size-1])
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyIsNil() *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IS NULL")
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyIsNotNil() *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IS NOT NULL")
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyRaw(raw string, bindings ...interface{}) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyLike(key string) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` LIKE ?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *updateTestRepo) WhereKeyNotLike(key string) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` NOT LIKE ?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtEqual(deleteAt time.Time) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtNotEqual(deleteAt time.Time) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<>?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtIn(deleteAtList ...time.Time) *updateTestRepo {
+	size := len(deleteAtList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, deleteAtList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, deleteAtList[size-1])
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtNotIn(deleteAtList ...time.Time) *updateTestRepo {
+	size := len(deleteAtList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` NOT IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, deleteAtList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, deleteAtList[size-1])
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtIsNil() *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IS NULL")
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtIsNotNil() *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IS NOT NULL")
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtRaw(raw string, bindings ...interface{}) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtGreatThan(deleteAt time.Time) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`>?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtGreatThanEqual(deleteAt time.Time) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`>=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtLessThan(deleteAt time.Time) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *updateTestRepo) WhereDeleteAtLessThenEqual(deleteAt time.Time) *updateTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
 func (r *updateTestRepo) orderByCheck() {
 	if r.hasOrderBy {
 		r.sqlBuilder.WriteString(",")
@@ -1028,6 +1456,46 @@ func (r *updateTestRepo) OrderByUpdateAtRaw(raw string, bindings ...interface{})
 	return r
 }
 
+func (r *updateTestRepo) OrderByKeyAsc() *updateTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` ASC")
+	return r
+}
+
+func (r *updateTestRepo) OrderByKeyDesc() *updateTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` DESC")
+	return r
+}
+
+func (r *updateTestRepo) OrderByKeyRaw(raw string, bindings ...interface{}) *updateTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *updateTestRepo) OrderByDeleteAtAsc() *updateTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ASC")
+	return r
+}
+
+func (r *updateTestRepo) OrderByDeleteAtDesc() *updateTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` DESC")
+	return r
+}
+
+func (r *updateTestRepo) OrderByDeleteAtRaw(raw string, bindings ...interface{}) *updateTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
 func (r *updateTestRepo) Limit(limit int) *updateTestRepo {
 	r.sqlBuilder.WriteString(" LIMIT ?")
 	r.bindings = append(r.bindings, limit)
@@ -1055,7 +1523,7 @@ func (r *deleteTestRepo) whereCheck() {
 	}
 
 	r.hasWhere = true
-	r.sqlBuilder.WriteString(" WHERE")
+	r.sqlBuilder.WriteString(" WHERE (`delete_at` IS NULL) AND")
 }
 
 func (r *deleteTestRepo) WhereIdEqual(id int) *deleteTestRepo {
@@ -1352,6 +1820,188 @@ func (r *deleteTestRepo) WhereUpdateAtLessThenEqual(updateAt time.Time) *deleteT
 	return r
 }
 
+func (r *deleteTestRepo) WhereKeyEqual(key string) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyNotEqual(key string) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key`<>?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyIn(keyList ...string) *deleteTestRepo {
+	size := len(keyList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, keyList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, keyList[size-1])
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyNotIn(keyList ...string) *deleteTestRepo {
+	size := len(keyList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` NOT IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, keyList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, keyList[size-1])
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyIsNil() *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IS NULL")
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyIsNotNil() *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` IS NOT NULL")
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyRaw(raw string, bindings ...interface{}) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyLike(key string) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` LIKE ?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *deleteTestRepo) WhereKeyNotLike(key string) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `key` NOT LIKE ?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtEqual(deleteAt time.Time) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtNotEqual(deleteAt time.Time) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<>?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtIn(deleteAtList ...time.Time) *deleteTestRepo {
+	size := len(deleteAtList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, deleteAtList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, deleteAtList[size-1])
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtNotIn(deleteAtList ...time.Time) *deleteTestRepo {
+	size := len(deleteAtList)
+	if size == 0 {
+		return r
+	}
+
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` NOT IN(")
+
+	for i, l := 0, size-1; i < l; i++ {
+		r.sqlBuilder.WriteString("?,")
+		r.bindings = append(r.bindings, deleteAtList[i])
+	}
+	r.sqlBuilder.WriteString("?)")
+	r.bindings = append(r.bindings, deleteAtList[size-1])
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtIsNil() *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IS NULL")
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtIsNotNil() *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` IS NOT NULL")
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtRaw(raw string, bindings ...interface{}) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtGreatThan(deleteAt time.Time) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`>?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtGreatThanEqual(deleteAt time.Time) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`>=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtLessThan(deleteAt time.Time) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+func (r *deleteTestRepo) WhereDeleteAtLessThenEqual(deleteAt time.Time) *deleteTestRepo {
+	r.whereCheck()
+	r.sqlBuilder.WriteString(" `delete_at`<=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
 func (r *deleteTestRepo) orderByCheck() {
 	if r.hasOrderBy {
 		r.sqlBuilder.WriteString(",")
@@ -1425,6 +2075,46 @@ func (r *deleteTestRepo) OrderByUpdateAtDesc() *deleteTestRepo {
 func (r *deleteTestRepo) OrderByUpdateAtRaw(raw string, bindings ...interface{}) *deleteTestRepo {
 	r.orderByCheck()
 	r.sqlBuilder.WriteString(" `update_at` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *deleteTestRepo) OrderByKeyAsc() *deleteTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` ASC")
+	return r
+}
+
+func (r *deleteTestRepo) OrderByKeyDesc() *deleteTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` DESC")
+	return r
+}
+
+func (r *deleteTestRepo) OrderByKeyRaw(raw string, bindings ...interface{}) *deleteTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(raw)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+func (r *deleteTestRepo) OrderByDeleteAtAsc() *deleteTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ASC")
+	return r
+}
+
+func (r *deleteTestRepo) OrderByDeleteAtDesc() *deleteTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` DESC")
+	return r
+}
+
+func (r *deleteTestRepo) OrderByDeleteAtRaw(raw string, bindings ...interface{}) *deleteTestRepo {
+	r.orderByCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
 	r.sqlBuilder.WriteString(raw)
 	r.bindings = append(r.bindings, bindings...)
 	return r
@@ -1534,6 +2224,7 @@ func (r *deleteTestRepo) MustExec() int64 {
 
 // GetContext 获取单条数据
 func (r *selectTestRepo) GetContext(ctx context.Context) (*Test, error) {
+	r.Limit(1)
 	row := r.db.QueryRowContext(ctx, r.sqlBuilder.String(), r.bindings...)
 	m := &Test{}
 	scanners := make([]interface{}, len(r.fields))
@@ -1545,6 +2236,10 @@ func (r *selectTestRepo) GetContext(ctx context.Context) (*Test, error) {
 			scanners[i] = &m.CreateAt
 		case "`update_at`":
 			scanners[i] = &m.UpdateAt
+		case "`key`":
+			scanners[i] = &m.Key
+		case "`delete_at`":
+			scanners[i] = &m.DeleteAt
 		}
 	}
 	return m, row.Scan(scanners...)
@@ -1562,7 +2257,7 @@ func (r *selectTestRepo) MustGetContext(ctx context.Context) *Test {
 	return res
 }
 
-// MustGetOrFailContext 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+// MustGetOrFailContext 获取单条数据,有错误时 panic
 func (r *selectTestRepo) MustGetOrFailContext(ctx context.Context) *Test {
 	res, err := r.GetContext(ctx)
 	if err != nil {
@@ -1581,11 +2276,12 @@ func (r *selectTestRepo) MustGet() *Test {
 	return r.MustGetContext(context.Background())
 }
 
-// MustGetOrFail 必须返回数据,即使返回 sql.ErrNoRows 也会 panic
+// MustGetOrFail 获取单条数据,有错误时 panic
 func (r *selectTestRepo) MustGetOrFail() *Test {
 	return r.MustGetOrFailContext(context.Background())
 }
 
+// SelectContext 获取多条数据
 func (r *selectTestRepo) SelectContext(ctx context.Context) ([]*Test, error) {
 	var err error
 	rows, err := r.db.QueryContext(ctx, r.sqlBuilder.String(), r.bindings...)
@@ -1610,6 +2306,10 @@ func (r *selectTestRepo) SelectContext(ctx context.Context) ([]*Test, error) {
 				scanners[i] = &m.CreateAt
 			case `update_at`:
 				scanners[i] = &m.UpdateAt
+			case `key`:
+				scanners[i] = &m.Key
+			case `delete_at`:
+				scanners[i] = &m.DeleteAt
 			}
 		}
 		if err := rows.Scan(scanners...); err != nil {
@@ -1620,6 +2320,7 @@ func (r *selectTestRepo) SelectContext(ctx context.Context) ([]*Test, error) {
 	return res, nil
 }
 
+// MustSelectContext 获取多条数据,有错误时 panic
 func (r *selectTestRepo) MustSelectContext(ctx context.Context) []*Test {
 	res, err := r.SelectContext(ctx)
 	if err != nil {
@@ -1628,14 +2329,17 @@ func (r *selectTestRepo) MustSelectContext(ctx context.Context) []*Test {
 	return res
 }
 
+// Select 获取多条数据
 func (r *selectTestRepo) Select() ([]*Test, error) {
 	return r.SelectContext(context.Background())
 }
 
+// MustSelect 获取多条数据,有错误时 panic
 func (r *selectTestRepo) MustSelect() []*Test {
 	return r.MustSelectContext(context.Background())
 }
 
+// Duplicate 用于更新插入数据时冲突的数据
 func (r *insertTestRepo) Duplicate() *duplicateTestRepo {
 	res := &duplicateTestRepo{
 		db:       r.db,
@@ -1648,6 +2352,7 @@ func (r *insertTestRepo) Duplicate() *duplicateTestRepo {
 
 func (r *updateTestRepo) setCheck() {
 	if r.first {
+		r.first = false
 		return
 	}
 
@@ -1655,6 +2360,7 @@ func (r *updateTestRepo) setCheck() {
 	r.first = false
 }
 
+// Set 将数据更新为 test 内的值,零值会被忽略
 func (r *updateTestRepo) Set(test *Test) *updateTestRepo {
 	id := test.Id
 	if id != 0 {
@@ -1677,9 +2383,32 @@ func (r *updateTestRepo) Set(test *Test) *updateTestRepo {
 		r.bindings = append(r.bindings, updateAt)
 	}
 
+	key := test.Key
+	if key != "" {
+		r.setCheck()
+		r.sqlBuilder.WriteString(" `key`=?")
+		r.bindings = append(r.bindings, key)
+	}
+
+	deleteAt := test.DeleteAt
+	if !deleteAt.IsZero() {
+		r.setCheck()
+		r.sqlBuilder.WriteString(" `delete_at`=?")
+		r.bindings = append(r.bindings, deleteAt)
+	}
+
 	return r
 }
 
+// SetId 将字段更新为指定值
+func (r *updateTestRepo) SetId(id int) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `id`=?")
+	r.bindings = append(r.bindings, id)
+	return r
+}
+
+// SetIdEmpty 将字段更新为零值
 func (r *updateTestRepo) SetIdEmpty() *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `id`=?")
@@ -1687,12 +2416,14 @@ func (r *updateTestRepo) SetIdEmpty() *updateTestRepo {
 	return r
 }
 
+// SetIdNil 将字段更新为 nil
 func (r *updateTestRepo) SetIdNil() *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `id`=NULL")
 	return r
 }
 
+// SetIdRaw 自定义更新语句
 func (r *updateTestRepo) SetIdRaw(sql string, bindings ...interface{}) *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `id` ")
@@ -1700,6 +2431,16 @@ func (r *updateTestRepo) SetIdRaw(sql string, bindings ...interface{}) *updateTe
 	r.bindings = append(r.bindings, bindings...)
 	return r
 }
+
+// SetCreateAt 将字段更新为指定值
+func (r *updateTestRepo) SetCreateAt(createAt time.Time) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `create_at`=?")
+	r.bindings = append(r.bindings, createAt)
+	return r
+}
+
+// SetCreateAtEmpty 将字段更新为零值
 func (r *updateTestRepo) SetCreateAtEmpty() *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `create_at`=?")
@@ -1707,12 +2448,14 @@ func (r *updateTestRepo) SetCreateAtEmpty() *updateTestRepo {
 	return r
 }
 
+// SetCreateAtNil 将字段更新为 nil
 func (r *updateTestRepo) SetCreateAtNil() *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `create_at`=NULL")
 	return r
 }
 
+// SetCreateAtRaw 自定义更新语句
 func (r *updateTestRepo) SetCreateAtRaw(sql string, bindings ...interface{}) *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `create_at` ")
@@ -1720,6 +2463,16 @@ func (r *updateTestRepo) SetCreateAtRaw(sql string, bindings ...interface{}) *up
 	r.bindings = append(r.bindings, bindings...)
 	return r
 }
+
+// SetUpdateAt 将字段更新为指定值
+func (r *updateTestRepo) SetUpdateAt(updateAt time.Time) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `update_at`=?")
+	r.bindings = append(r.bindings, updateAt)
+	return r
+}
+
+// SetUpdateAtEmpty 将字段更新为零值
 func (r *updateTestRepo) SetUpdateAtEmpty() *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `update_at`=?")
@@ -1727,12 +2480,14 @@ func (r *updateTestRepo) SetUpdateAtEmpty() *updateTestRepo {
 	return r
 }
 
+// SetUpdateAtNil 将字段更新为 nil
 func (r *updateTestRepo) SetUpdateAtNil() *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `update_at`=NULL")
 	return r
 }
 
+// SetUpdateAtRaw 自定义更新语句
 func (r *updateTestRepo) SetUpdateAtRaw(sql string, bindings ...interface{}) *updateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `update_at` ")
@@ -1741,8 +2496,73 @@ func (r *updateTestRepo) SetUpdateAtRaw(sql string, bindings ...interface{}) *up
 	return r
 }
 
+// SetKey 将字段更新为指定值
+func (r *updateTestRepo) SetKey(key string) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+// SetKeyEmpty 将字段更新为零值
+func (r *updateTestRepo) SetKeyEmpty() *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, "")
+	return r
+}
+
+// SetKeyNil 将字段更新为 nil
+func (r *updateTestRepo) SetKeyNil() *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=NULL")
+	return r
+}
+
+// SetKeyRaw 自定义更新语句
+func (r *updateTestRepo) SetKeyRaw(sql string, bindings ...interface{}) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(sql)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+// SetDeleteAt 将字段更新为指定值
+func (r *updateTestRepo) SetDeleteAt(deleteAt time.Time) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+// SetDeleteAtEmpty 将字段更新为零值
+func (r *updateTestRepo) SetDeleteAtEmpty() *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, time.Time{})
+	return r
+}
+
+// SetDeleteAtNil 将字段更新为 nil
+func (r *updateTestRepo) SetDeleteAtNil() *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=NULL")
+	return r
+}
+
+// SetDeleteAtRaw 自定义更新语句
+func (r *updateTestRepo) SetDeleteAtRaw(sql string, bindings ...interface{}) *updateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(sql)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
 func (r *duplicateTestRepo) setCheck() {
 	if r.first {
+		r.first = false
 		return
 	}
 
@@ -1750,6 +2570,7 @@ func (r *duplicateTestRepo) setCheck() {
 	r.first = false
 }
 
+// Set 将数据更新为 test 内的值,零值会被忽略
 func (r *duplicateTestRepo) Set(test *Test) *duplicateTestRepo {
 	id := test.Id
 	if id != 0 {
@@ -1772,9 +2593,32 @@ func (r *duplicateTestRepo) Set(test *Test) *duplicateTestRepo {
 		r.bindings = append(r.bindings, updateAt)
 	}
 
+	key := test.Key
+	if key != "" {
+		r.setCheck()
+		r.sqlBuilder.WriteString(" `key`=?")
+		r.bindings = append(r.bindings, key)
+	}
+
+	deleteAt := test.DeleteAt
+	if !deleteAt.IsZero() {
+		r.setCheck()
+		r.sqlBuilder.WriteString(" `delete_at`=?")
+		r.bindings = append(r.bindings, deleteAt)
+	}
+
 	return r
 }
 
+// SetId 将字段更新为指定值
+func (r *duplicateTestRepo) SetId(id int) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `id`=?")
+	r.bindings = append(r.bindings, id)
+	return r
+}
+
+// SetIdEmpty 将字段更新为零值
 func (r *duplicateTestRepo) SetIdEmpty() *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `id`=?")
@@ -1782,12 +2626,14 @@ func (r *duplicateTestRepo) SetIdEmpty() *duplicateTestRepo {
 	return r
 }
 
+// SetIdNil 将字段更新为 nil
 func (r *duplicateTestRepo) SetIdNil() *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `id`=NULL")
 	return r
 }
 
+// SetIdRaw 自定义更新语句
 func (r *duplicateTestRepo) SetIdRaw(sql string, bindings ...interface{}) *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `id` ")
@@ -1795,6 +2641,23 @@ func (r *duplicateTestRepo) SetIdRaw(sql string, bindings ...interface{}) *dupli
 	r.bindings = append(r.bindings, bindings...)
 	return r
 }
+
+// SetIdValues 有冲突时将值更新为插入的值
+func (r *duplicateTestRepo) SetIdValues() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `id`=VALUES(`id`)")
+	return r
+}
+
+// SetCreateAt 将字段更新为指定值
+func (r *duplicateTestRepo) SetCreateAt(createAt time.Time) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `create_at`=?")
+	r.bindings = append(r.bindings, createAt)
+	return r
+}
+
+// SetCreateAtEmpty 将字段更新为零值
 func (r *duplicateTestRepo) SetCreateAtEmpty() *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `create_at`=?")
@@ -1802,12 +2665,14 @@ func (r *duplicateTestRepo) SetCreateAtEmpty() *duplicateTestRepo {
 	return r
 }
 
+// SetCreateAtNil 将字段更新为 nil
 func (r *duplicateTestRepo) SetCreateAtNil() *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `create_at`=NULL")
 	return r
 }
 
+// SetCreateAtRaw 自定义更新语句
 func (r *duplicateTestRepo) SetCreateAtRaw(sql string, bindings ...interface{}) *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `create_at` ")
@@ -1815,6 +2680,23 @@ func (r *duplicateTestRepo) SetCreateAtRaw(sql string, bindings ...interface{}) 
 	r.bindings = append(r.bindings, bindings...)
 	return r
 }
+
+// SetCreateAtValues 有冲突时将值更新为插入的值
+func (r *duplicateTestRepo) SetCreateAtValues() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `create_at`=VALUES(`create_at`)")
+	return r
+}
+
+// SetUpdateAt 将字段更新为指定值
+func (r *duplicateTestRepo) SetUpdateAt(updateAt time.Time) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `update_at`=?")
+	r.bindings = append(r.bindings, updateAt)
+	return r
+}
+
+// SetUpdateAtEmpty 将字段更新为零值
 func (r *duplicateTestRepo) SetUpdateAtEmpty() *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `update_at`=?")
@@ -1822,12 +2704,14 @@ func (r *duplicateTestRepo) SetUpdateAtEmpty() *duplicateTestRepo {
 	return r
 }
 
+// SetUpdateAtNil 将字段更新为 nil
 func (r *duplicateTestRepo) SetUpdateAtNil() *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `update_at`=NULL")
 	return r
 }
 
+// SetUpdateAtRaw 自定义更新语句
 func (r *duplicateTestRepo) SetUpdateAtRaw(sql string, bindings ...interface{}) *duplicateTestRepo {
 	r.setCheck()
 	r.sqlBuilder.WriteString(" `update_at` ")
@@ -1836,22 +2720,112 @@ func (r *duplicateTestRepo) SetUpdateAtRaw(sql string, bindings ...interface{}) 
 	return r
 }
 
+// SetUpdateAtValues 有冲突时将值更新为插入的值
+func (r *duplicateTestRepo) SetUpdateAtValues() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `update_at`=VALUES(`update_at`)")
+	return r
+}
+
+// SetKey 将字段更新为指定值
+func (r *duplicateTestRepo) SetKey(key string) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, key)
+	return r
+}
+
+// SetKeyEmpty 将字段更新为零值
+func (r *duplicateTestRepo) SetKeyEmpty() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=?")
+	r.bindings = append(r.bindings, "")
+	return r
+}
+
+// SetKeyNil 将字段更新为 nil
+func (r *duplicateTestRepo) SetKeyNil() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=NULL")
+	return r
+}
+
+// SetKeyRaw 自定义更新语句
+func (r *duplicateTestRepo) SetKeyRaw(sql string, bindings ...interface{}) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key` ")
+	r.sqlBuilder.WriteString(sql)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+// SetKeyValues 有冲突时将值更新为插入的值
+func (r *duplicateTestRepo) SetKeyValues() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `key`=VALUES(`key`)")
+	return r
+}
+
+// SetDeleteAt 将字段更新为指定值
+func (r *duplicateTestRepo) SetDeleteAt(deleteAt time.Time) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, deleteAt)
+	return r
+}
+
+// SetDeleteAtEmpty 将字段更新为零值
+func (r *duplicateTestRepo) SetDeleteAtEmpty() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=?")
+	r.bindings = append(r.bindings, time.Time{})
+	return r
+}
+
+// SetDeleteAtNil 将字段更新为 nil
+func (r *duplicateTestRepo) SetDeleteAtNil() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=NULL")
+	return r
+}
+
+// SetDeleteAtRaw 自定义更新语句
+func (r *duplicateTestRepo) SetDeleteAtRaw(sql string, bindings ...interface{}) *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at` ")
+	r.sqlBuilder.WriteString(sql)
+	r.bindings = append(r.bindings, bindings...)
+	return r
+}
+
+// SetDeleteAtValues 有冲突时将值更新为插入的值
+func (r *duplicateTestRepo) SetDeleteAtValues() *duplicateTestRepo {
+	r.setCheck()
+	r.sqlBuilder.WriteString(" `delete_at`=VALUES(`delete_at`)")
+	return r
+}
+
+// SQL 输出 SQL 语句与参数
 func (r *selectTestRepo) SQL() (string, []interface{}) {
 	return r.sqlBuilder.String(), r.bindings
 }
 
+// SQL 输出 SQL 语句与参数
 func (r *insertTestRepo) SQL() (string, []interface{}) {
 	return r.sqlBuilder.String(), r.bindings
 }
 
+// SQL 输出 SQL 语句与参数
 func (r *duplicateTestRepo) SQL() (string, []interface{}) {
 	return r.sqlBuilder.String(), r.bindings
 }
 
+// SQL 输出 SQL 语句与参数
 func (r *updateTestRepo) SQL() (string, []interface{}) {
 	return r.sqlBuilder.String(), r.bindings
 }
 
+// SQL 输出 SQL 语句与参数
 func (r *deleteTestRepo) SQL() (string, []interface{}) {
 	return r.sqlBuilder.String(), r.bindings
 }

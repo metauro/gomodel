@@ -10,27 +10,25 @@ import (
 
 var _ = time.Second
 
-{{$modelName := .Name -}}
-{{$table := .SQLName | escape -}}
 {{range .Fields -}}
-const {{$modelName}}Field{{.StructName}} = "{{.SQLName}}"
+const {{$.TitleName}}Field{{.TitleName}} = "{{.SQLName}}"
 {{end}}
-var {{$modelName}}Fields = []string{
-{{range $i, $field := .Fields}}  {{$modelName}}Field{{$field.StructName}},
+var {{.TitleName}}Fields = []string{
+{{range .Fields}}  {{$.TitleName}}Field{{.TitleName}},
 {{end -}}
 }
 
-type {{.Name}} struct {
-{{range .Fields}}  {{.StructName}} {{.Type}} `{{.Tag}}`
+type {{.TitleName}} struct {
+{{range .Fields}}  {{.TitleName}} {{.Type}} `{{.Tag}}`
 {{end -}}
 }
 
-{{$repo := (print (.Name | camelCase) "Repo" ) -}}
-{{- $selectRepo := (print "select" .Name "Repo") -}}
-{{- $insertRepo := (print "insert" .Name "Repo") -}}
-{{- $updateRepo := (print "update" .Name "Repo") -}}
-{{- $duplicateRepo := (print "duplicate" .Name "Repo") -}}
-{{- $deleteRepo := (print "delete" .Name "Repo") -}}
+{{$repo := (print .CamelName "Repo" ) -}}
+{{- $selectRepo := (print "select" .TitleName "Repo") -}}
+{{- $insertRepo := (print "insert" .TitleName "Repo") -}}
+{{- $updateRepo := (print "update" .TitleName "Repo") -}}
+{{- $duplicateRepo := (print "duplicate" .TitleName "Repo") -}}
+{{- $deleteRepo := (print "delete" .TitleName "Repo") -}}
 {{- $fields := "" -}}
 {{- range $i, $field := .Fields -}}
 {{if $i}}
@@ -43,7 +41,7 @@ type {{$repo}} struct {
 	db gomodel.Execer
 }
 
-func New{{.Name}}Repo (db gomodel.Execer) *{{$repo}} {
+func New{{.TitleName}}Repo (db gomodel.Execer) *{{$repo}} {
   return &{{$repo}} {
     db: db,
   }
@@ -94,18 +92,18 @@ type {{$deleteRepo}} struct {
 func (r *{{$repo}}) Select() *{{$selectRepo}} {
 	res := &{{$selectRepo}}{
 	  db: r.db,
-		fields: {{$modelName}}Fields,
+		fields: {{.TitleName}}Fields,
 	}
-	res.sqlBuilder.WriteString("SELECT {{$fields}} FROM {{$table}} ")
+	res.sqlBuilder.WriteString("SELECT {{$fields}} FROM {{.SQLName}} ")
 	return res
 }
 
 func (r *{{$repo}}) SelectDistinct() *{{$selectRepo}} {
 	res := &{{$selectRepo}}{
 		db: r.db,
-		fields: {{$modelName}}Fields,
+		fields: {{.TitleName}}Fields,
 	}
-	res.sqlBuilder.WriteString("SELECT DISTINCT {{$fields}} FROM {{$table}} ")
+	res.sqlBuilder.WriteString("SELECT DISTINCT {{$fields}} FROM {{.SQLName}} ")
 	return res
 }
 
@@ -120,7 +118,7 @@ func (r *{{$repo}}) SelectPick(fields ...string) *{{$selectRepo}} {
     res.sqlBuilder.WriteString(",")
 	}
 	res.sqlBuilder.WriteString(fields[len(fields) - 1])
-	res.sqlBuilder.WriteString(" FROM {{$table}} ")
+	res.sqlBuilder.WriteString(" FROM {{.SQLName}} ")
 	return res
 }
 
@@ -135,14 +133,14 @@ func (r *{{$repo}}) SelectDistinctPick(fields ...string) *{{$selectRepo}} {
     res.sqlBuilder.WriteString(",")
 	}
 	res.sqlBuilder.WriteString(fields[len(fields) - 1])
-	res.sqlBuilder.WriteString(" FROM {{$table}} ")
+	res.sqlBuilder.WriteString(" FROM {{.SQLName}} ")
 	return res
 }
 
 func (r *{{$repo}}) SelectOmit(fields ...string) *{{$selectRepo}} {
   size := len(fields)
 omit:
-  for _, field := range {{$modelName}}Fields {
+  for _, field := range {{.TitleName}}Fields {
     for _, omitField := range fields {
       if field == omitField {
         continue omit
@@ -161,14 +159,14 @@ omit:
     res.sqlBuilder.WriteString(",")
   }
   res.sqlBuilder.WriteString(fields[len(fields) - 1])
-  res.sqlBuilder.WriteString(" FROM {{$table}} ")
+  res.sqlBuilder.WriteString(" FROM {{.SQLName}} ")
   return res
 }
 
 func (r *{{$repo}}) SelectDistinctOmit(fields ...string) *{{$selectRepo}} {
   size := len(fields)
 omit:
-  for _, field := range {{$modelName}}Fields {
+  for _, field := range {{.TitleName}}Fields {
     for _, omitField := range fields {
       if field == omitField {
         continue omit
@@ -187,28 +185,26 @@ omit:
     res.sqlBuilder.WriteString(",")
   }
   res.sqlBuilder.WriteString(fields[len(fields) - 1])
-  res.sqlBuilder.WriteString(" FROM {{$table}} ")
+  res.sqlBuilder.WriteString(" FROM {{.SQLName}} ")
 	return res
 }
 
-{{$param := .Name | camelCase}}
-{{$paramList := (printf "%s%s" $param "List")}}
-func (r *{{$repo}}) Insert({{$paramList}} ...*{{.Name}}) *{{$insertRepo}} {
+func (r *{{$repo}}) Insert({{.CamelName}}List ...*{{.TitleName}}) *{{$insertRepo}} {
   res :=  &{{$insertRepo}} {
     db: r.db,
   }
-  res.sqlBuilder.WriteString("INSERT INTO {{$table}} ({{$fields}}) VALUES ")
-  for i, m := range {{$paramList}} {
+  res.sqlBuilder.WriteString("INSERT INTO {{.SQLName}} ({{$fields}}) VALUES ")
+  for i, m := range {{.CamelName}}List {
     if i > 0 {
       res.sqlBuilder.WriteString(",")
     }
     res.sqlBuilder.WriteString("(")
     {{range $i, $field := .Fields -}}
-      if m.{{$field.StructName}}{{if eq $field.Type "time.Time"}}.IsZero(){{else}} == {{$field.ZeroValue}}{{end}} {
+      if m.{{$field.TitleName}}{{if eq $field.Type "time.Time"}}.IsZero(){{else}} == {{$field.ZeroValue}}{{end}} {
         res.sqlBuilder.WriteString("{{if $i}},{{end}}DEFAULT")
       } else {
         res.sqlBuilder.WriteString("{{if $i}},{{end}}{{$.Placeholder}}")
-        res.bindings = append(res.bindings, m.{{$field.StructName}})
+        res.bindings = append(res.bindings, m.{{$field.TitleName}})
       }
     {{end}}
     res.sqlBuilder.WriteString(")")
@@ -221,17 +217,33 @@ func (r *{{$repo}}) Update() *{{$updateRepo}} {
     db: r.db,
     first: true,
   }
-  res.sqlBuilder.WriteString("UPDATE {{$table}} SET ")
+  res.sqlBuilder.WriteString("UPDATE {{.SQLName}} SET ")
   return res
 }
 
+{{if .SoftDeleteColumn}}
+func (r *{{$repo}}) Delete(hardDelete bool) *{{$deleteRepo}} {
+  res := &{{$deleteRepo}} {
+    db: r.db,
+  }
+
+  if hardDelete {
+    res.sqlBuilder.WriteString("DELETE FROM {{.SQLName}} ")
+  } else {
+    res.sqlBuilder.WriteString("UPDATE {{.SQLName}} SET {{.SoftDeleteColumn}}=?")
+    res.bindings = append(res.bindings, time.Now())
+  }
+  return res
+}
+{{else}}
 func (r *{{$repo}}) Delete() *{{$deleteRepo}} {
   res := &{{$deleteRepo}} {
     db: r.db,
   }
-  res.sqlBuilder.WriteString("DELETE FROM {{$table}} ")
+  res.sqlBuilder.WriteString("DELETE FROM {{.SQLName}} ")
   return res
 }
+{{end}}
 
 {{range $repo := newSlice $selectRepo $updateRepo $deleteRepo -}}
 func (r *{{$repo}}) And() *{{$repo}} {
@@ -256,26 +268,30 @@ func (r *{{$repo}}) whereCheck() {
  }
 
  r.hasWhere = true
+ {{if $.SoftDeleteColumn -}}
+ r.sqlBuilder.WriteString(" WHERE ({{$.SoftDeleteColumn}} IS NULL) AND")
+ {{- else -}}
  r.sqlBuilder.WriteString(" WHERE")
+ {{end -}}
 }
 
 {{range $.Fields -}}
-func (r *{{$repo}}) Where{{.StructName}}Equal({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}Equal({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
 	r.sqlBuilder.WriteString(" {{.SQLName}}={{$.Placeholder}}")
-	r.bindings = append(r.bindings, {{.ParamName}})
+	r.bindings = append(r.bindings, {{.CamelName}})
 	return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}NotEqual({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}NotEqual({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
 	r.sqlBuilder.WriteString(" {{.SQLName}}<>{{$.Placeholder}}")
-	r.bindings = append(r.bindings, {{.ParamName}})
+	r.bindings = append(r.bindings, {{.CamelName}})
 	return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}In({{.ParamListName}} ...{{.Type}}) *{{$repo}} {
-	size := len({{.ParamListName}})
+func (r *{{$repo}}) Where{{.TitleName}}In({{.CamelName}}List ...{{.Type}}) *{{$repo}} {
+	size := len({{.CamelName}}List)
 	if size == 0 {
 	  return r
 	}
@@ -285,15 +301,15 @@ func (r *{{$repo}}) Where{{.StructName}}In({{.ParamListName}} ...{{.Type}}) *{{$
 
 	for i, l := 0, size - 1; i < l; i++ {
 		r.sqlBuilder.WriteString("{{$.Placeholder}},")
-		r.bindings = append(r.bindings, {{.ParamListName}}[i])
+		r.bindings = append(r.bindings, {{.CamelName}}List[i])
 	}
 	r.sqlBuilder.WriteString("{{$.Placeholder}})")
-	r.bindings = append(r.bindings, {{.ParamListName}}[size - 1])
+	r.bindings = append(r.bindings, {{.CamelName}}List[size - 1])
 	return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}NotIn({{.ParamListName}} ...{{.Type}}) *{{$repo}} {
-	size := len({{.ParamListName}})
+func (r *{{$repo}}) Where{{.TitleName}}NotIn({{.CamelName}}List ...{{.Type}}) *{{$repo}} {
+	size := len({{.CamelName}}List)
 	if size == 0 {
 	  return r
 	}
@@ -303,26 +319,26 @@ func (r *{{$repo}}) Where{{.StructName}}NotIn({{.ParamListName}} ...{{.Type}}) *
 
 	for i, l := 0, size - 1; i < l; i++ {
 		r.sqlBuilder.WriteString("{{$.Placeholder}},")
-		r.bindings = append(r.bindings, {{.ParamListName}}[i])
+		r.bindings = append(r.bindings, {{.CamelName}}List[i])
 	}
 	r.sqlBuilder.WriteString("{{$.Placeholder}})")
-	r.bindings = append(r.bindings, {{.ParamListName}}[size - 1])
+	r.bindings = append(r.bindings, {{.CamelName}}List[size - 1])
 	return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}IsNil() *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}IsNil() *{{$repo}} {
   r.whereCheck()
 	r.sqlBuilder.WriteString(" {{.SQLName}} IS NULL")
 	return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}IsNotNil() *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}IsNotNil() *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} IS NOT NULL")
   return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}Raw(raw string, bindings ...interface{}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}Raw(raw string, bindings ...interface{}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} ")
   r.sqlBuilder.WriteString(raw)
@@ -331,48 +347,48 @@ func (r *{{$repo}}) Where{{.StructName}}Raw(raw string, bindings ...interface{})
 }
 
 {{if eq .Type "string"}}
-func (r *{{$repo}}) Where{{.StructName}}Like({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}Like({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} LIKE {{$.Placeholder}}")
-  r.bindings = append(r.bindings, {{.ParamName}})
+  r.bindings = append(r.bindings, {{.CamelName}})
   return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}NotLike({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}NotLike({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} NOT LIKE {{$.Placeholder}}")
-  r.bindings = append(r.bindings, {{.ParamName}})
+  r.bindings = append(r.bindings, {{.CamelName}})
   return r
 }
 {{end -}}
 
 {{if eq .Type "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"
 "time.Time"}}
-func (r *{{$repo}}) Where{{.StructName}}GreatThan({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}GreatThan({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}>{{$.Placeholder}}")
-  r.bindings = append(r.bindings, {{.ParamName}})
+  r.bindings = append(r.bindings, {{.CamelName}})
   return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}GreatThanEqual({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}GreatThanEqual({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}>={{$.Placeholder}}")
-  r.bindings = append(r.bindings, {{.ParamName}})
+  r.bindings = append(r.bindings, {{.CamelName}})
   return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}LessThan({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}LessThan({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}<{{$.Placeholder}}")
-  r.bindings = append(r.bindings, {{.ParamName}})
+  r.bindings = append(r.bindings, {{.CamelName}})
   return r
 }
 
-func (r *{{$repo}}) Where{{.StructName}}LessThenEqual({{.ParamName}} {{.Type}}) *{{$repo}} {
+func (r *{{$repo}}) Where{{.TitleName}}LessThenEqual({{.CamelName}} {{.Type}}) *{{$repo}} {
   r.whereCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}<={{$.Placeholder}}")
-  r.bindings = append(r.bindings, {{.ParamName}})
+  r.bindings = append(r.bindings, {{.CamelName}})
   return r
 }
 {{end}}
@@ -397,19 +413,19 @@ func (r *{{$repo}}) OrderByRaw(raw string, bindings ...interface{}) *{{$repo}} {
 }
 
 {{range $.Fields}}
-func (r *{{$repo}}) OrderBy{{.StructName}}Asc() *{{$repo}} {
+func (r *{{$repo}}) OrderBy{{.TitleName}}Asc() *{{$repo}} {
   r.orderByCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} ASC")
   return r
 }
 
-func (r *{{$repo}}) OrderBy{{.StructName}}Desc() *{{$repo}} {
+func (r *{{$repo}}) OrderBy{{.TitleName}}Desc() *{{$repo}} {
   r.orderByCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} DESC")
   return r
 }
 
-func (r *{{$repo}}) OrderBy{{.StructName}}Raw(raw string, bindings ...interface{}) *{{$repo}} {
+func (r *{{$repo}}) OrderBy{{.TitleName}}Raw(raw string, bindings ...interface{}) *{{$repo}} {
   r.orderByCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} ")
   r.sqlBuilder.WriteString(raw)
@@ -452,15 +468,16 @@ func (r *{{$repo}}) MustExec() int64 {
 {{end}}
 
 // GetContext 获取单条数据
-func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$modelName}}, error) {
+func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$.TitleName}}, error) {
+  r.Limit(1)
 	row := r.db.QueryRowContext(ctx, r.sqlBuilder.String(), r.bindings...)
-	m := &{{$modelName}}{}
+	m := &{{$.TitleName}}{}
 	scanners := make([]interface{}, len(r.fields))
 	for i, field := range r.fields {
     switch field {
       {{range $field := .Fields -}}
       case "{{$field.SQLName}}":
-        scanners[i] = &m.{{$field.StructName}}
+        scanners[i] = &m.{{$field.TitleName}}
       {{end -}}
     }
 	}
@@ -468,7 +485,7 @@ func (r *{{$selectRepo}}) GetContext(ctx context.Context) (*{{$modelName}}, erro
 }
 
 // MustGetContext 获取单条数据,如果返回 sql.ErrNoRows 错误则返回 nil, 其他错误则 panic
-func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$modelName}} {
+func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$.TitleName}} {
   res, err := r.GetContext(ctx)
   if err != nil {
     if err == sql.ErrNoRows {
@@ -480,7 +497,7 @@ func (r *{{$selectRepo}}) MustGetContext(ctx context.Context) *{{$modelName}} {
 }
 
 // MustGetOrFailContext 获取单条数据,有错误时 panic
-func (r *{{$selectRepo}}) MustGetOrFailContext(ctx context.Context) *{{$modelName}} {
+func (r *{{$selectRepo}}) MustGetOrFailContext(ctx context.Context) *{{$.TitleName}} {
   res, err := r.GetContext(ctx)
   if err != nil {
     panic(err)
@@ -489,28 +506,28 @@ func (r *{{$selectRepo}}) MustGetOrFailContext(ctx context.Context) *{{$modelNam
 }
 
 // Get 获取单条数据
-func (r *{{$selectRepo}}) Get() (*{{$modelName}}, error) {
+func (r *{{$selectRepo}}) Get() (*{{$.TitleName}}, error) {
   return r.GetContext(context.Background())
 }
 
 // MustGet 获取单条数据,如果返回 sql.ErrNoRows 错误则返回 nil, 其他错误则 panic
-func (r *{{$selectRepo}}) MustGet() *{{$modelName}} {
+func (r *{{$selectRepo}}) MustGet() *{{$.TitleName}} {
   return r.MustGetContext(context.Background())
 }
 
 // MustGetOrFail 获取单条数据,有错误时 panic
-func (r *{{$selectRepo}}) MustGetOrFail() *{{$modelName}} {
+func (r *{{$selectRepo}}) MustGetOrFail() *{{$.TitleName}} {
   return r.MustGetOrFailContext(context.Background())
 }
 
 // SelectContext 获取多条数据
-func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$modelName}}, error) {
+func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$.TitleName}}, error) {
 	var err error
 	rows, err := r.db.QueryContext(ctx, r.sqlBuilder.String(), r.bindings...)
 	if err != nil {
 		return nil, err
 	}
-	res := make([]*{{$modelName}}, 0)
+	res := make([]*{{$.TitleName}}, 0)
 	scanners := make([]interface{}, len(r.fields))
 	defer func() {
 		cerr := rows.Close()
@@ -519,12 +536,12 @@ func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$modelName}},
 		}
 	}()
 	for rows.Next() {
-		m := &{{$modelName}}{}
+		m := &{{$.TitleName}}{}
     for i, field := range r.fields {
       switch field {
         {{range $field := .Fields -}}
         case {{$field.SQLName}}:
-          scanners[i] = &m.{{$field.StructName}}
+          scanners[i] = &m.{{$field.TitleName}}
         {{end -}}
       }
     }
@@ -537,7 +554,7 @@ func (r *{{$selectRepo}}) SelectContext(ctx context.Context) ([]*{{$modelName}},
 }
 
 // MustSelectContext 获取多条数据,有错误时 panic
-func (r *{{$selectRepo}}) MustSelectContext(ctx context.Context) []*{{$modelName}} {
+func (r *{{$selectRepo}}) MustSelectContext(ctx context.Context) []*{{$.TitleName}} {
   res, err := r.SelectContext(ctx)
   if err != nil {
     panic(err)
@@ -546,15 +563,16 @@ func (r *{{$selectRepo}}) MustSelectContext(ctx context.Context) []*{{$modelName
 }
 
 // Select 获取多条数据
-func (r *{{$selectRepo}}) Select() ([]*{{$modelName}}, error) {
+func (r *{{$selectRepo}}) Select() ([]*{{$.TitleName}}, error) {
   return r.SelectContext(context.Background())
 }
 
 // MustSelect 获取多条数据,有错误时 panic
-func (r *{{$selectRepo}}) MustSelect() []*{{$modelName}} {
+func (r *{{$selectRepo}}) MustSelect() []*{{$.TitleName}} {
   return r.MustSelectContext(context.Background())
 }
 
+// Duplicate 用于更新插入数据时冲突的数据
 func (r *{{$insertRepo}}) Duplicate() *{{$duplicateRepo}} {
   res := &{{$duplicateRepo}} {
     db: r.db,
@@ -568,6 +586,7 @@ func (r *{{$insertRepo}}) Duplicate() *{{$duplicateRepo}} {
 {{range $repo := newSlice $updateRepo $duplicateRepo -}}
 func (r *{{$repo}}) setCheck() {
    if r.first {
+     r.first = false
      return
    }
 
@@ -575,47 +594,65 @@ func (r *{{$repo}}) setCheck() {
    r.first = false
 }
 
-// Set 将数据更新为 {{$modelName | camelCase}} 内的值,零值会被忽略
-func (r *{{$repo}}) Set({{$modelName | camelCase}} *{{$modelName}}) *{{$repo}} {
+// Set 将数据更新为 {{$.CamelName}} 内的值,零值会被忽略
+func (r *{{$repo}}) Set({{$.CamelName}} *{{$.TitleName}}) *{{$repo}} {
   {{- range $i, $field := $.Fields}}
-  {{$field.ParamName}} := {{$modelName | camelCase}}.{{$field.StructName}}
-  if {{if eq $field.Type "time.Time"}}!{{$field.ParamName}}.IsZero(){{else}}{{$field.ParamName}} != {{$field.ZeroValue}}{{end}} {
+  {{$field.CamelName}} := {{$.CamelName}}.{{$field.TitleName}}
+  if {{if eq $field.Type "time.Time"}}!{{$field.CamelName}}.IsZero(){{else}}{{$field.CamelName}} != {{$field.ZeroValue}}{{end}} {
     r.setCheck()
     r.sqlBuilder.WriteString(" {{$field.SQLName}}={{$.Placeholder}}")
-    r.bindings = append(r.bindings, {{$field.ParamName}})
+    r.bindings = append(r.bindings, {{$field.CamelName}})
   }
   {{end}}
   return r
 }
 
 {{range $.Fields -}}
-// Set{{.StructName}}Empty 将字段更新为零值
-func (r *{{$repo}}) Set{{.StructName}}Empty() *{{$repo}} {
+// Set{{.TitleName}} 将字段更新为指定值
+func (r *{{$repo}}) Set{{.TitleName}}({{.CamelName}} {{.Type}}) *{{$repo}} {
+  r.setCheck()
+  r.sqlBuilder.WriteString(" {{.SQLName}}={{$.Placeholder}}")
+  r.bindings = append(r.bindings, {{.CamelName}})
+  return r
+}
+
+// Set{{.TitleName}}Empty 将字段更新为零值
+func (r *{{$repo}}) Set{{.TitleName}}Empty() *{{$repo}} {
   r.setCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}={{$.Placeholder}}")
   r.bindings = append(r.bindings, {{.ZeroValue}})
   return r
 }
 
-// Set{{.StructName}}Nil 将字段更新为 nil
-func (r *{{$repo}}) Set{{.StructName}}Nil() *{{$repo}} {
+// Set{{.TitleName}}Nil 将字段更新为 nil
+func (r *{{$repo}}) Set{{.TitleName}}Nil() *{{$repo}} {
   r.setCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}}=NULL")
   return r
 }
 
-// Set{{.StructName}}Raw 自定义更新语句
-func (r *{{$repo}}) Set{{.StructName}}Raw(sql string, bindings ...interface{}) *{{$repo}} {
+// Set{{.TitleName}}Raw 自定义更新语句
+func (r *{{$repo}}) Set{{.TitleName}}Raw(sql string, bindings ...interface{}) *{{$repo}} {
   r.setCheck()
   r.sqlBuilder.WriteString(" {{.SQLName}} ")
   r.sqlBuilder.WriteString(sql)
   r.bindings = append(r.bindings, bindings...)
   return r
 }
+
+{{if eq $repo $duplicateRepo}}
+// Set{{.TitleName}}Values 有冲突时将值更新为插入的值
+func (r *{{$repo}}) Set{{.TitleName}}Values() *{{$repo}} {
+  r.setCheck()
+  r.sqlBuilder.WriteString(" {{.SQLName}}=VALUES({{.SQLName}})")
+  return r
+}
+{{end}}
 {{end}}
 {{end}}
 
 {{range $repo := newSlice $selectRepo $insertRepo $duplicateRepo $updateRepo $deleteRepo}}
+// SQL 输出 SQL 语句与参数
 func (r *{{$repo}}) SQL() (string, []interface{}) {
   return r.sqlBuilder.String(), r.bindings
 }

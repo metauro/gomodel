@@ -1,32 +1,13 @@
-/*
-Copyright © 2021 Ramin Zhong <zhongyuanjia.uni@gmail.com>
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-*/
 package cmd
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/iancoleman/strcase"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
@@ -34,28 +15,36 @@ import (
 	"text/template"
 )
 
-type Field struct {
-	ParamName     string
-	ParamListName string
-	SQLName       string
-	StructName    string
-	Type          string
-	Tag           string
-	ZeroValue     string
-}
-
 type Model struct {
-	Pkg         string
-	Name        string
-	SQLName     string
-	Placeholder string
-	Fields      []*Field
+	Pkg              string
+	TitleName        string
+	CamelName        string
+	SnakeName        string
+	SQLName          string
+	Placeholder      string
+	SoftDeleteColumn string
+	Fields           []*Field
 }
 
-var prefix = ""
-var appendPrefix = false
-var selectAllTable = false
-var pkg = ""
+type Field struct {
+	TitleName string
+	CamelName string
+	SnakeName string
+	SQLName   string
+	Type      string
+	Tag       string
+	ZeroValue string
+}
+
+type GenConfig struct {
+	Prefix           string
+	AppendPrefix     bool
+	SelectAllTable   bool
+	Pkg              string
+	Output           string
+	SoftDeleteColumn string
+	Tag              string
+}
 
 //go:embed model.tmpl
 var modelTemplate string
@@ -63,9 +52,18 @@ var modelTemplate string
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
-	Short: "根据表结构生成模型代码",
+	Short: "Generate code from tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		tables := getTables()
+		c := &GenConfig{
+			Prefix:           viper.GetString("prefix"),
+			AppendPrefix:     viper.GetBool("append-prefix"),
+			SelectAllTable:   viper.GetBool("all"),
+			Pkg:              viper.GetString("pkg"),
+			Output:           viper.GetString("output"),
+			SoftDeleteColumn: viper.GetString("soft-delete-column"),
+			Tag:              viper.GetString("tag"),
+		}
+		tables := getTables(c)
 
 		if len(tables) == 0 {
 			log.Printf("no tables need to generate")
@@ -75,8 +73,8 @@ var genCmd = &cobra.Command{
 		log.Printf("start generate %+v\n", tables)
 		escapeChar := "`"
 
-		tmpl := template.Must(template.New("model").Funcs(template.FuncMap{
-			"toSnake": func(s string) string {
+		tmpl := template.Must(template.New("").Funcs(template.FuncMap{
+			"snakeCase": func(s string) string {
 				return strcase.ToSnake(s)
 			},
 			"escape": func(s string) string {
@@ -98,24 +96,36 @@ var genCmd = &cobra.Command{
 
 		for _, table := range tables {
 			name := table
-			if !appendPrefix && prefix != "" && strings.HasPrefix(name, prefix) {
-				name = name[len(prefix):]
+			if !c.AppendPrefix && c.Prefix != "" && strings.HasPrefix(name, c.Prefix) {
+				name = name[len(c.Prefix):]
 			}
-			if err := os.MkdirAll(pkg, 0755); err != nil {
+			if err := os.MkdirAll(c.Output, 0755); err != nil {
 				panic(err)
 			}
-			file, err := os.OpenFile(fmt.Sprintf("%s/%s.gen.go", pkg, name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
+			file, err := os.OpenFile(fmt.Sprintf("%s/%s.gen.go", c.Pkg, name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
 				os.ModePerm)
 			if err != nil {
 				panic(err)
 			}
 			name = strcase.ToCamel(name)
+			fields := getFieldsFromTable(table, c)
+			softDeleteColumn := ""
+
+			for _, field := range fields {
+				if field.SnakeName == c.SoftDeleteColumn {
+					softDeleteColumn = field.SQLName
+				}
+			}
+
 			if err := tmpl.Execute(file, &Model{
-				Pkg:         pkg,
-				Name:        name,
-				SQLName:     table,
-				Fields:      getFieldsFromTable(table),
-				Placeholder: "?",
+				Pkg:              c.Pkg,
+				CamelName:        strcase.ToLowerCamel(name),
+				TitleName:        strcase.ToCamel(name),
+				SnakeName:        table,
+				SQLName:          fmt.Sprintf("`%s`", table),
+				Fields:           fields,
+				Placeholder:      "?",
+				SoftDeleteColumn: softDeleteColumn,
 			}); err != nil {
 				panic(err)
 			}
@@ -133,13 +143,18 @@ var genCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(genCmd)
-	genCmd.Flags().StringVarP(&prefix, "prefix", "p", "", "选择指定前缀的表")
-	genCmd.Flags().BoolVar(&appendPrefix, "append-prefix", false, "生成的表名加上前缀")
-	genCmd.Flags().StringVar(&pkg, "package", "model", "包名")
-	genCmd.Flags().BoolVarP(&selectAllTable, "all", "a", false, "选择全部表")
+	genCmd.Flags().StringP("prefix", "p", "", "Select the table that contains the prefix")
+	genCmd.Flags().Bool("append-prefix", false, "Append prefix to struct name (default false)")
+	genCmd.Flags().String("pkg", "model", "Generate package name")
+	genCmd.Flags().BoolP("all", "a", false, "Select all table to generate")
+	genCmd.Flags().StringP("output", "o", "model", "Output folder")
+	genCmd.Flags().StringP("soft-delete-column", "d", "", "Enable soft deletion by updated column timestamp, "+
+		"the column type should be one of DATE, DATETIME, TIMESTAMP")
+	genCmd.Flags().StringP("tag", "t", `json:"{{.SnakeName}}" db:"{{.SnakeName}}"`, "Struct field tag template")
+	cobra.CheckErr(viper.BindPFlags(genCmd.Flags()))
 }
 
-func getTables() []string {
+func getTables(c *GenConfig) []string {
 	rows, err := db.Queryx("SHOW TABLES")
 	if err != nil {
 		panic(err)
@@ -154,14 +169,14 @@ func getTables() []string {
 	}
 
 	// 生成全部表
-	if selectAllTable {
+	if c.SelectAllTable {
 		return tables
 	}
 
 	// 如果没有指定前缀,则用户手动选择要生成的表
-	if prefix == "" {
+	if c.Prefix == "" {
 		prompt := &survey.MultiSelect{
-			Message:  "请选择要生成的表",
+			Message:  "please select what tables you need to generate",
 			Options:  tables,
 			PageSize: 10,
 		}
@@ -174,7 +189,7 @@ func getTables() []string {
 	// 按前缀筛选
 	result := make([]string, 0)
 	for _, table := range tables {
-		if !strings.HasPrefix(table, prefix) {
+		if !strings.HasPrefix(table, c.Prefix) {
 			continue
 		}
 
@@ -184,7 +199,7 @@ func getTables() []string {
 	return result
 }
 
-func getFieldsFromTable(table string) []*Field {
+func getFieldsFromTable(table string, c *GenConfig) []*Field {
 	rows, err := db.Queryx(fmt.Sprintf("SHOW FULL COLUMNS FROM `%s`", table))
 	if err != nil {
 		panic(err)
@@ -241,6 +256,8 @@ func getFieldsFromTable(table string) []*Field {
 		"type":        true,
 		"var":         true,
 	}
+
+	tmpl := template.Must(template.New("").Parse(c.Tag))
 	result := make([]*Field, 0)
 	for rows.Next() {
 		info := ColumnInfo{}
@@ -275,17 +292,21 @@ func getFieldsFromTable(table string) []*Field {
 		if isKeyword := keywordMap[name]; isKeyword {
 			name = "k_" + name
 		}
-		name = strcase.ToLowerCamel(name)
 
-		result = append(result, &Field{
-			ParamName:     name,
-			ParamListName: strcase.ToLowerCamel(info.Field + "_list"),
-			SQLName:       fmt.Sprintf("`%s`", info.Field),
-			StructName:    strcase.ToCamel(info.Field),
-			Type:          typ,
-			Tag:           fmt.Sprintf(`db:"%s"`, info.Field),
-			ZeroValue:     zeroValue,
-		})
+		field := &Field{
+			TitleName: strcase.ToCamel(info.Field),
+			CamelName: strcase.ToLowerCamel(name),
+			SnakeName: info.Field,
+			SQLName:   fmt.Sprintf("`%s`", info.Field),
+			Type:      typ,
+			ZeroValue: zeroValue,
+		}
+		if c.Tag != "" {
+			var tag bytes.Buffer
+			cobra.CheckErr(tmpl.Execute(&tag, field))
+			field.Tag = tag.String()
+		}
+		result = append(result, field)
 	}
 
 	return result
