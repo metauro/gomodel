@@ -7,5 +7,6 @@ release:
 	git commit -m "chore(release): $(version)"; \
 	git tag $(version); \
 	git push; \
-	git push --tags
+	git push --tags \
+	go list -m github.com/metauro/gomodel@$(version)
 
