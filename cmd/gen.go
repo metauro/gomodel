@@ -66,6 +66,12 @@ var genCmd = &cobra.Command{
 	Short: "根据表结构生成模型代码",
 	Run: func(cmd *cobra.Command, args []string) {
 		tables := getTables()
+
+		if len(tables) == 0 {
+			log.Printf("no tables need to generate")
+			return
+		}
+
 		log.Printf("start generate %+v\n", tables)
 		escapeChar := "`"
 
