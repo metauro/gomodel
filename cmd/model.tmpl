@@ -441,6 +441,12 @@ func (r *{{$repo}}) Limit(limit int) *{{$repo}} {
 }
 {{end}}
 
+func (r *{{$selectRepo}}) Offset(offset int) *{{$selectRepo}} {
+  r.sqlBuilder.WriteString(" OFFSET ?")
+  r.bindings = append(r.bindings, offset)
+  return r
+}
+
 {{range $repo := newSlice $insertRepo $duplicateRepo $updateRepo $deleteRepo}}
 func (r *{{$repo}}) ExecContext(ctx context.Context) (int64, error) {
   res, err := r.db.ExecContext(ctx, r.sqlBuilder.String(), r.bindings...)

@@ -239,17 +239,11 @@ func (r *testRepo) Update() *updateTestRepo {
 	return res
 }
 
-func (r *testRepo) Delete(hardDelete bool) *deleteTestRepo {
+func (r *testRepo) Delete() *deleteTestRepo {
 	res := &deleteTestRepo{
 		db: r.db,
 	}
-
-	if hardDelete {
-		res.sqlBuilder.WriteString("DELETE FROM `test` ")
-	} else {
-		res.sqlBuilder.WriteString("UPDATE `test` SET `delete_at`=?")
-		res.bindings = append(res.bindings, time.Now())
-	}
+	res.sqlBuilder.WriteString("DELETE FROM `test` ")
 	return res
 }
 
@@ -275,7 +269,7 @@ func (r *selectTestRepo) whereCheck() {
 	}
 
 	r.hasWhere = true
-	r.sqlBuilder.WriteString(" WHERE (`delete_at` IS NULL) AND")
+	r.sqlBuilder.WriteString(" WHERE")
 }
 
 func (r *selectTestRepo) WhereIdEqual(id int) *selectTestRepo {
@@ -899,7 +893,7 @@ func (r *updateTestRepo) whereCheck() {
 	}
 
 	r.hasWhere = true
-	r.sqlBuilder.WriteString(" WHERE (`delete_at` IS NULL) AND")
+	r.sqlBuilder.WriteString(" WHERE")
 }
 
 func (r *updateTestRepo) WhereIdEqual(id int) *updateTestRepo {
@@ -1523,7 +1517,7 @@ func (r *deleteTestRepo) whereCheck() {
 	}
 
 	r.hasWhere = true
-	r.sqlBuilder.WriteString(" WHERE (`delete_at` IS NULL) AND")
+	r.sqlBuilder.WriteString(" WHERE")
 }
 
 func (r *deleteTestRepo) WhereIdEqual(id int) *deleteTestRepo {
@@ -2123,6 +2117,12 @@ func (r *deleteTestRepo) OrderByDeleteAtRaw(raw string, bindings ...interface{})
 func (r *deleteTestRepo) Limit(limit int) *deleteTestRepo {
 	r.sqlBuilder.WriteString(" LIMIT ?")
 	r.bindings = append(r.bindings, limit)
+	return r
+}
+
+func (r *selectTestRepo) Offset(offset int) *selectTestRepo {
+	r.sqlBuilder.WriteString(" OFFSET ?")
+	r.bindings = append(r.bindings, offset)
 	return r
 }
 
