@@ -8,7 +8,7 @@ import (
   "database/sql"
 )
 
-var _ = time.Time{}
+var _ = time.Second
 
 {{$modelName := .Name -}}
 {{$table := .SQLName | escape -}}
