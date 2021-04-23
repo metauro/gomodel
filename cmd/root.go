@@ -16,14 +16,9 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/metauro/gomodel/internal/msql"
 	"github.com/spf13/cobra"
-	"os"
-
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
 )
 
 var cfgFile string
@@ -53,33 +48,8 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".gomodel" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".gomodel")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
-		panic(err)
-	}
-	_, _ = fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-
-	type Config struct {
-		SQL *msql.Config
-	}
-	config := &Config{}
-	if err := viper.Unmarshal(config); err != nil {
-		panic(err)
-	}
-	db = msql.Open(config.SQL)
+	config, err := NewConfig()
+	cobra.CheckErr(err)
+	config.MySQL.Type = "mysql"
+	db = msql.Open(config.MySQL)
 }
