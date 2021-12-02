@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/iancoleman/strcase"
+	"github.com/metauro/gomodel/internal/template"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
-	"text/template"
 )
 
 type Model struct {
@@ -31,23 +32,22 @@ type Field struct {
 	CamelName string
 	SnakeName string
 	SQLName   string
+	SQLType   string
 	Type      string
 	Tag       string
 	ZeroValue string
+	Nullable  bool
 }
 
 type GenConfig struct {
 	Prefix           string
 	AppendPrefix     bool
 	SelectAllTable   bool
-	Pkg              string
 	Output           string
 	SoftDeleteColumn string
 	Tag              string
+	TimeString       bool
 }
-
-//go:embed model.tmpl
-var modelTemplate string
 
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
@@ -58,41 +58,44 @@ var genCmd = &cobra.Command{
 			Prefix:           viper.GetString("prefix"),
 			AppendPrefix:     viper.GetBool("append-prefix"),
 			SelectAllTable:   viper.GetBool("all"),
-			Pkg:              viper.GetString("pkg"),
 			Output:           viper.GetString("output"),
 			SoftDeleteColumn: viper.GetString("soft-delete-column"),
 			Tag:              viper.GetString("tag"),
+			TimeString:       viper.GetBool("time-string"),
 		}
-		tables := getTables(c)
+		pkg := strcase.ToSnake(filepath.Base(c.Output))
+		tables, err := getTables(c)
+		if err != nil {
+			panic(err)
+		}
+		cobra.CheckErr(err)
 
 		if len(tables) == 0 {
-			log.Printf("no tables need to generate")
+			log.Printf("no tables need to generate\n")
 			return
 		}
 
-		log.Printf("start generate %+v\n", tables)
-		escapeChar := "`"
+		log.Printf("start generate tables: %v\n", tables)
 
-		tmpl := template.Must(template.New("").Funcs(template.FuncMap{
-			"snakeCase": func(s string) string {
-				return strcase.ToSnake(s)
-			},
-			"escape": func(s string) string {
-				return fmt.Sprintf("%s%s%s", escapeChar, s, escapeChar)
-			},
-			"camelCase": func(s string) string {
-				return strcase.ToLowerCamel(s)
-			},
-			"titleCase": func(s string) string {
-				return strcase.ToCamel(s)
-			},
-			"stringsJoin": func(elems []string, sep string) string {
-				return strings.Join(elems, sep)
-			},
-			"newSlice": func(args ...interface{}) interface{} {
-				return args
-			},
-		}).Parse(modelTemplate))
+		wd, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+
+		var templateMap = map[string]string{
+			"constants": template.TemplateConstants,
+			"db":        template.TemplateDB,
+			"delete":    template.TemplateDelete,
+			"insert":    template.TemplateInsert,
+			"model":     template.TemplateModel,
+			"order":     template.TemplateOrder,
+			"runtime":   template.TemplateRuntime,
+			"select":    template.TemplateSelect,
+			"update":    template.TemplateUpdate,
+			"where":     template.TemplateWhere,
+		}
+
+		models := make([]*Model, 0, len(tables))
 
 		for _, table := range tables {
 			name := table
@@ -102,23 +105,21 @@ var genCmd = &cobra.Command{
 			if err := os.MkdirAll(c.Output, 0755); err != nil {
 				panic(err)
 			}
-			file, err := os.OpenFile(fmt.Sprintf("%s/%s.gen.go", c.Pkg, name), os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
-				os.ModePerm)
+
+			name = strcase.ToCamel(name)
+			fields, err := getFieldsFromTable(table, c)
 			if err != nil {
 				panic(err)
 			}
-			name = strcase.ToCamel(name)
-			fields := getFieldsFromTable(table, c)
 			softDeleteColumn := ""
-
 			for _, field := range fields {
 				if field.SnakeName == c.SoftDeleteColumn {
 					softDeleteColumn = field.SQLName
 				}
 			}
 
-			if err := tmpl.Execute(file, &Model{
-				Pkg:              c.Pkg,
+			model := &Model{
+				Pkg:              pkg,
 				CamelName:        strcase.ToLowerCamel(name),
 				TitleName:        strcase.ToCamel(name),
 				SnakeName:        table,
@@ -126,15 +127,41 @@ var genCmd = &cobra.Command{
 				Fields:           fields,
 				Placeholder:      "?",
 				SoftDeleteColumn: softDeleteColumn,
-			}); err != nil {
-				panic(err)
+			}
+			models = append(models, model)
+
+			for name, content := range templateMap {
+				fmt.Printf("gen %v template\n", name)
+				file, err := os.OpenFile(
+					filepath.Join(wd, c.Output, fmt.Sprintf("%s_%s.go", model.SnakeName, name)),
+					os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm,
+				)
+				if err != nil {
+					panic(err)
+				}
+				err = template.Execute(template.TemplateVariable+content, file, model)
+				if err != nil {
+					panic(err)
+				}
 			}
 			log.Printf("generate %s success\n", table)
 		}
 
-		log.Println("start format code")
-		if err := exec.Command("go", "fmt", "./...").Run(); err != nil {
+		file, err := os.OpenFile(
+			filepath.Join(wd, c.Output, "db.go"),
+			os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm,
+		)
+		err = template.Execute(template.TemplateDBAll, file, models)
+		if err != nil {
 			panic(err)
+		}
+
+		log.Println("start format code")
+		var errBuf bytes.Buffer
+		fmtCmd := exec.Command("go", "fmt", "./...")
+		fmtCmd.Stderr = &errBuf
+		if err := fmtCmd.Run(); err != nil {
+			panic(errBuf.String())
 		}
 		log.Println("format code success")
 		log.Println("generate done")
@@ -145,32 +172,35 @@ func init() {
 	rootCmd.AddCommand(genCmd)
 	genCmd.Flags().StringP("prefix", "p", "", "Select the table that contains the prefix")
 	genCmd.Flags().Bool("append-prefix", false, "Append prefix to struct name (default false)")
-	genCmd.Flags().String("pkg", "model", "Generate package name")
 	genCmd.Flags().BoolP("all", "a", false, "Select all table to generate")
 	genCmd.Flags().StringP("output", "o", "model", "Output folder")
 	genCmd.Flags().StringP("soft-delete-column", "d", "", "Enable soft deletion by updated column timestamp, "+
 		"the column type should be one of DATE, DATETIME, TIMESTAMP")
-	genCmd.Flags().StringP("tag", "t", `json:"{{.SnakeName}}" db:"{{.SnakeName}}"`, "Struct field tag template")
+	genCmd.Flags().StringP("tag", "t", `json:"{{.SnakeName}}" db:"{{.SnakeName}}"`,
+		`Struct field tag template, Available Tags: 
+	TitleName - title case field name, eg: TestField
+	CamelName - camel case field name, eg: testField
+	SnakeName - snake case field name, eg: test_field 
+	SQLName   - escaped field name, eg: "test_field"  
+	Type      - field golang type, string, int, time.Time etc.
+	SQLType   - field sql type, varchar(11), char(11), int(11) etc.
+	SQLTypeNoArgs - field sql type, no 
+	Unsigned -  true if field type is unsigned numeric   
+	ZeroValue - field golang zero value
+`)
+	genCmd.Flags().Bool("time-string", false, "Use string instead time.Time")
 	cobra.CheckErr(viper.BindPFlags(genCmd.Flags()))
 }
 
-func getTables(c *GenConfig) []string {
-	rows, err := db.Queryx("SHOW TABLES")
+func getTables(c *GenConfig) ([]string, error) {
+	tables, err := db.GetTables()
 	if err != nil {
-		panic(err)
-	}
-	tables := make([]string, 0)
-	for rows.Next() {
-		var str string
-		if err := rows.Scan(&str); err != nil {
-			panic(err)
-		}
-		tables = append(tables, str)
+		return nil, err
 	}
 
 	// 生成全部表
 	if c.SelectAllTable {
-		return tables
+		return tables, nil
 	}
 
 	// 如果没有指定前缀,则用户手动选择要生成的表
@@ -183,7 +213,7 @@ func getTables(c *GenConfig) []string {
 
 		tables = make([]string, 0)
 		_ = survey.AskOne(prompt, &tables, survey.WithPageSize(10))
-		return tables
+		return tables, nil
 	}
 
 	// 按前缀筛选
@@ -196,39 +226,45 @@ func getTables(c *GenConfig) []string {
 		result = append(result, table)
 	}
 
-	return result
+	return result, nil
 }
 
-func getFieldsFromTable(table string, c *GenConfig) []*Field {
-	rows, err := db.Queryx(fmt.Sprintf("SHOW FULL COLUMNS FROM `%s`", table))
-	if err != nil {
-		panic(err)
-	}
-
-	type ColumnInfo struct {
-		Field      string  `db:"Field"`
-		Type       string  `db:"Type"`
-		Collation  *string `db:"Collation"`
-		Null       string  `db:"Null"`
-		Key        string  `db:"Key"`
-		Default    *string `db:"Default"`
-		Extra      string  `db:"Extra"`
-		Privileges string  `db:"Privileges"`
-		Comment    string  `db:"Comment"`
-	}
-
+func getFieldsFromTable(table string, c *GenConfig) ([]*Field, error) {
 	typeMap := map[string]string{
+		// numeric type
+		"tinyint":   "int8",
+		"smallint":  "int16",
+		"mediumint": "int32",
+		"int":       "int32",
+		"bigint":    "int64",
 		"float":     "float32",
 		"double":    "float64",
 		"decimal":   "float64",
+		// date type
 		"date":      "time.Time",
-		"time":      "time.Time",
-		"year":      "time.Time",
 		"datetime":  "time.Time",
 		"timestamp": "time.Time",
-		"json":      "string",
+		"time":      "time.Time",
+		"year":      "time.Time",
+		// string type
+		"char":       "string",
+		"varchar":    "string",
+		"binary":     "string",
+		"varbinary":  "string",
+		"tinyblob":   "string",
+		"tinytext":   "string",
+		"blob":       "string",
+		"text":       "string",
+		"mediumblob": "string",
+		"mediumtext": "string",
+		"longblob":   "string",
+		"longtext":   "string",
+		"enum":       "string",
+		"set":        "string",
+		"json":       "string",
 	}
 
+	// TODO: null 和 zeroValue  使用 https://github.com/guregu/null 处理
 	keywordMap := map[string]bool{
 		"break":       true,
 		"case":        true,
@@ -257,57 +293,92 @@ func getFieldsFromTable(table string, c *GenConfig) []*Field {
 		"var":         true,
 	}
 
-	tmpl := template.Must(template.New("").Parse(c.Tag))
+	columns, err := db.GetColumns(table)
+	if err != nil {
+		return nil, err
+	}
+
 	result := make([]*Field, 0)
-	for rows.Next() {
-		info := ColumnInfo{}
-		if err := rows.StructScan(&info); err != nil {
-			panic(err)
-		}
-		typ := strings.ToLower(info.Type)
-		if bracketIdx := strings.Index(typ, "("); bracketIdx != -1 {
-			typ = typ[0:bracketIdx]
-		}
-
+	for _, column := range columns {
+		// sql 类型,如 "tinyint(1)"
+		sqlType := strings.ToLower(column.Type)
+		// sql 类型,去掉括号内容的,如 "tinyint"
+		sqlTypeNoArgs := sqlType
+		typ := typeMap[sqlType]
 		zeroValue := ""
-		if strings.HasSuffix(typ, "char") || strings.HasSuffix(typ, "blob") || strings.HasSuffix(typ, "text") {
-			typ = "string"
-			zeroValue = `""`
-		} else if strings.HasSuffix(typ, "int") || typ == "integer" {
-			typ = "int"
-			zeroValue = "0"
-		} else {
-			typ = typeMap[typ]
+		unsigned := strings.Contains(sqlType, "unsigned")
+
+		if bracketIdx := strings.Index(sqlType, "("); bracketIdx != -1 {
+			sqlTypeNoArgs = sqlType[0:bracketIdx]
 		}
 
-		if strings.HasPrefix(typ, "int") || strings.HasPrefix(typ, "float") {
-			zeroValue = "0"
-		} else if typ == "string" {
+		if spaceIdx := strings.Index(sqlTypeNoArgs, " "); spaceIdx != -1 {
+			sqlTypeNoArgs = sqlTypeNoArgs[0:spaceIdx]
+		}
+
+		if typ == "" {
+			if strings.HasPrefix(sqlType, "tinyint(1)") {
+				typ = "bool"
+			} else {
+				typ = typeMap[sqlTypeNoArgs]
+			}
+
+			if typ == "" {
+				typ = "interface{}"
+			}
+		}
+
+		fmt.Printf("sqltype: %v, %v, typ: %v \n", sqlType, sqlTypeNoArgs, typ)
+
+		// 处理无符号类型
+		if strings.HasPrefix(typ, "int") && unsigned {
+			typ = "u" + typ
+		}
+
+		if typ == "time.Time" && c.TimeString {
+			typ = "string"
+		}
+
+		if typ == "string" {
 			zeroValue = `""`
+		} else if typ == "bool" {
+			zeroValue = "false"
 		} else if typ == "time.Time" {
 			zeroValue = "time.Time{}"
+		} else if strings.HasPrefix(typ, "int") ||
+			strings.HasPrefix(typ, "uint") ||
+			strings.HasPrefix(typ, "float") {
+			zeroValue = "0"
+		} else {
+			zeroValue = "nil"
 		}
 
-		name := info.Field
+		name := column.Field
+		// sql 字段名与 go 关键字冲突时,添加前缀
 		if isKeyword := keywordMap[name]; isKeyword {
 			name = "k_" + name
 		}
 
 		field := &Field{
-			TitleName: strcase.ToCamel(info.Field),
+			TitleName: strcase.ToCamel(column.Field),
 			CamelName: strcase.ToLowerCamel(name),
-			SnakeName: info.Field,
-			SQLName:   fmt.Sprintf("`%s`", info.Field),
+			SnakeName: column.Field,
+			SQLName:   fmt.Sprintf("`%s`", column.Field),
 			Type:      typ,
+			SQLType:   sqlType,
 			ZeroValue: zeroValue,
+			Nullable:  column.Null == "YES",
 		}
 		if c.Tag != "" {
 			var tag bytes.Buffer
-			cobra.CheckErr(tmpl.Execute(&tag, field))
+			err := template.Execute(c.Tag, &tag, field)
+			if err != nil {
+				return nil, err
+			}
 			field.Tag = tag.String()
 		}
 		result = append(result, field)
 	}
 
-	return result
+	return result, nil
 }

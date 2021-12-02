@@ -1,0 +1,120 @@
+package {{.Pkg}}
+
+import (
+  "context"
+  "strings"
+  "time"
+)
+
+var _ = time.Second
+
+type {{$insertBuilder}} struct {
+  db *{{$db}}
+  table string
+  values []*{{.TitleName}}
+  fields []string
+}
+
+func new{{$insertBuilder | titleCase}}(db *{{$db}}) *{{$insertBuilder}} {
+  return &{{$insertBuilder}}{
+    db: db,
+    table: {{$table}},
+    fields: {{.TitleName}}Fields,
+  }
+}
+
+// Fields 指定只插入结构体哪些字段，默认全部字段都插入
+func (b *{{$insertBuilder}}) Fields(fields ...string) *{{$insertBuilder}} {
+  b.fields = fields
+  return b
+}
+
+// Values .
+func (b *{{$insertBuilder}}) Values({{.CamelName}}List ...*{{.TitleName}}) *{{$insertBuilder}} {
+  b.values = append(b.values, {{.CamelName}}List...)
+  return b
+}
+
+func (b *{{$insertBuilder}}) SQL() (string, []interface{}) {
+  if len(b.values) == 0 {
+    return "", nil
+  }
+
+  var sb strings.Builder
+  args := make([]interface{}, 0, len(b.fields) * len(b.values))
+
+  sb.WriteString("INSERT INTO ")
+  sb.WriteString("`")
+  sb.WriteString(b.table)
+  sb.WriteString("` (")
+
+  sb.WriteString(b.fields[0])
+  for i, size := 1, len(b.fields); i < size; i++ {
+    sb.WriteString(",")
+    sb.WriteString(b.fields[i])
+  }
+
+  sb.WriteString(") VALUES (?")
+  for i, size := 1, len(b.fields); i < size; i++ {
+    sb.WriteString(",")
+    sb.WriteString("{{$.Placeholder}}")
+  }
+  sb.WriteString(")")
+
+  if len(b.values) > 1 {
+    for i, size := 1, len(b.values); i < size; i++ {
+      sb.WriteString(",(?")
+      for j, fsize := 1, len(b.fields); j < fsize; j++ {
+        sb.WriteString(",?")
+      }
+      sb.WriteString(")")
+    }
+  }
+
+  for i, size := 0, len(b.values); i < size; i++ {
+    for _, field := range b.fields {
+      switch field {
+        {{range $i, $field := .Fields -}}
+        case {{$.TitleName}}Field{{$field.TitleName}}:
+        args = append(args, b.values[i].{{$field.TitleName}})
+        {{end -}}
+      }
+    }
+  }
+
+  return sb.String(), args
+}
+
+func (b *{{$insertBuilder}}) Exec(ctx context.Context) (int64, error) {
+  sql, args := b.SQL()
+  info := &queryInfo{
+    ctx: ctx,
+    table: b.table,
+    op: OpInsert,
+    query: sql,
+    args: args,
+  }
+  err := b.db.runBeforeHooks(info)
+  if err != nil {
+    return 0, err
+  }
+  ctx = info.ctx
+
+  if info.modified {
+    b.table = info.table
+    sql, _ = b.SQL()
+    args = info.args
+  }
+
+  res, err := b.db.ext.ExecContext(ctx, sql, args...)
+  if err != nil {
+    return 0, err
+  }
+  id, err := res.LastInsertId()
+  if err != nil {
+    return 0, err
+  }
+
+  info.value = id
+  return id, b.db.runAfterHooks(info)
+}

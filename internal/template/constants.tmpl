@@ -1,0 +1,13 @@
+package {{.Pkg}}
+
+const {{$table}} = "{{.SnakeName}}"
+
+const (
+{{range .Fields}}  {{$.TitleName}}Field{{.TitleName}} = "{{.SQLName}}"
+{{end -}}
+)
+
+var {{.TitleName}}Fields = []string{
+{{range .Fields}}  {{$.TitleName}}Field{{.TitleName}},
+{{end -}}
+}

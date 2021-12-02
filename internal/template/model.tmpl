@@ -1,0 +1,10 @@
+package {{.Pkg}}
+
+import "time"
+
+var _ = time.Second
+
+type {{.TitleName}} struct {
+{{range .Fields}}  {{.TitleName}} {{.Type}} `{{.Tag}}`
+{{end -}}
+}

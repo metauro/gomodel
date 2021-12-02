@@ -1,0 +1,65 @@
+package {{(index . 0).Pkg}}
+
+import (
+  "context"
+  "database/sql"
+  "github.com/jmoiron/sqlx"
+)
+
+type DB struct {
+  db *sqlx.DB
+{{range .}}{{.TitleName}} *{{print .TitleName "DB"}}
+{{end -}}
+}
+
+type Tx struct {
+  tx *sqlx.Tx
+{{range .}}{{.TitleName}} *{{print .TitleName "DB"}}
+{{end -}}
+}
+
+func NewDB(db *sqlx.DB) *DB {
+  return &DB{
+    {{range .}}{{.TitleName}}: New{{print .TitleName "DB"}}(db),
+    {{end -}}
+  }
+}
+
+func NewTx(tx *sqlx.Tx) *Tx {
+  return &Tx{
+{{range .}}{{.TitleName}}: New{{print .TitleName "DB"}}(tx),
+{{end -}}
+  }
+}
+
+func (db *DB) BeginFn(ctx context.Context, fn func(ctx context.Context, tx *Tx) error) error {
+  return db.BeginTxFn(ctx, nil, fn)
+}
+
+func (db *DB) BeginTxFn(ctx context.Context, opts *sql.TxOptions, fn func(ctx context.Context, tx *Tx) error) error {
+  tx, err := db.db.BeginTxx(ctx, opts)
+  if err != nil {
+    return err
+  }
+
+  txDB := NewTx(tx)
+  defer func() {
+    if err := recover(); err != nil {
+      _ = tx.Rollback()
+      panic(err)
+    }
+  }()
+
+  err = fn(ctx, txDB)
+  if err != nil {
+    _ = tx.Rollback()
+    return err
+  }
+
+  err = tx.Commit()
+	if err != nil && err != sql.ErrTxDone {
+		return err
+	}
+
+  return nil
+}

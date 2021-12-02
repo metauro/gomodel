@@ -1,0 +1,41 @@
+package {{.Pkg}}
+
+import "strings"
+
+type {{$orderBuilder}} struct {
+  sb strings.Builder
+  noFirst bool
+}
+
+func new{{$orderBuilder}}() *{{$orderBuilder}} {
+  b := &{{$orderBuilder}}{}
+  b.sb.WriteString("ORDER BY")
+  return b
+}
+
+{{range $.Fields}}
+func (b *{{$orderBuilder}}) {{.TitleName}}ASC() *{{$orderBuilder}} {
+  b.check()
+  b.sb.WriteString(" {{.SQLName}} ASC")
+  return b
+}
+
+func (b *{{$orderBuilder}}) {{.TitleName}}DESC() *{{$orderBuilder}} {
+  b.check()
+  b.sb.WriteString(" {{.SQLName}} DESC")
+  return b
+}
+{{end}}
+
+func (b *{{$orderBuilder}}) check() {
+  if b.noFirst {
+    b.sb.WriteString(",")
+    return
+  }
+
+  b.noFirst = true
+}
+
+func (b *{{$orderBuilder}}) sql() string {
+  return b.sb.String()
+}

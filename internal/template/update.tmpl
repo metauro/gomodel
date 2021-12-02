@@ -1,0 +1,161 @@
+package {{.Pkg}}
+
+import (
+  "context"
+  "strings"
+  "time"
+)
+
+var _ = time.Second
+
+type {{$updateBuilder}} struct {
+  db *{{$db}}
+  table string
+  changes map[string]*set
+  where *{{$whereBuilder}}
+}
+
+func new{{$updateBuilder}}(db *{{$db}}) *{{$updateBuilder}} {
+  return &{{$updateBuilder}}{
+    db: db,
+    table: {{$table}},
+    changes: make(map[string]*set),
+  }
+}
+
+// Set 将数据更新为 {{$.CamelName}} 内的值,零值会被忽略
+func (b *{{$updateBuilder}}) Set({{$.CamelName}} *{{$.TitleName}}) *{{$updateBuilder}} {
+  {{- range $i, $field := $.Fields}}
+  if {{if eq $field.Type "time.Time"}}!{{$.CamelName}}.{{$field.TitleName}}.IsZero(){{else}}{{$.CamelName}}.{{$field.TitleName}} != {{$field.ZeroValue}}{{end}} {
+    b.set("{{$field.TitleName}}", "{{$field.SQLName}}={{$.Placeholder}}", {{$.CamelName}}.{{$field.TitleName}})
+  }
+  {{end}}
+  return b
+}
+
+{{range $.Fields -}}
+// Set{{.TitleName}} 将字段更新为指定值
+func (b *{{$updateBuilder}}) Set{{.TitleName}}({{.CamelName}} {{.Type}}) *{{$updateBuilder}} {
+  b.set("{{.SQLName}}", "{{.SQLName}}={{$.Placeholder}}", {{.CamelName}})
+  return b
+}
+
+{{if eq .Type "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"}}
+func (b *{{$updateBuilder}}) Incr{{.TitleName}}(val {{.Type}}) *{{$updateBuilder}} {
+  b.set("{{.SQLName}}", "{{.SQLName}}={{.SQLName}}+{{$.Placeholder}}", val)
+  return b
+}
+
+func (b *{{$updateBuilder}}) Decr{{.TitleName}}(val {{.Type}}) *{{$updateBuilder}} {
+  b.set("{{.SQLName}}", "{{.SQLName}}={{.SQLName}}-{{$.Placeholder}}", val)
+  return b
+}
+{{end}}
+// Set{{.TitleName}}Zero 将字段更新为零值
+func (b *{{$updateBuilder}}) Set{{.TitleName}}Zero() *{{$updateBuilder}} {
+  b.set("{{.SQLName}}", "{{.SQLName}}={{$.Placeholder}}", {{.ZeroValue}})
+  return b
+}
+
+{{if .Nullable}}
+// Set{{.TitleName}}Nil 将字段更新为 nil
+func (b *{{$updateBuilder}}) Set{{.TitleName}}Nil() *{{$updateBuilder}} {
+  b.set("{{.SQLName}}", "{{.SQLName}}=NULL", nil)
+  return b
+}
+{{end}}
+
+// Set{{.TitleName}}Raw 自定义更新语句
+func (b *{{$updateBuilder}}) Set{{.TitleName}}Raw(sql string, args ...interface{}) *{{$updateBuilder}} {
+  b.set("{{.SQLName}}", "{{.SQLName}} " + sql, args)
+  return b
+}
+{{end}}
+
+func (b *{{$updateBuilder}}) Where(fn func(b *{{$whereBuilder}})) *{{$updateBuilder}} {
+  if b.where == nil {
+    b.where = new{{$whereBuilder}}()
+  }
+  fn(b.where)
+  return b
+}
+
+func (b *{{$updateBuilder}}) SQL() (string, []interface{}) {
+  var sb strings.Builder
+  args := make([]interface{}, 0, len(b.changes))
+  sb.WriteString("UPDATE ")
+  sb.WriteString("`")
+  sb.WriteString(b.table)
+  sb.WriteString("` SET ")
+
+  comma := false
+  for _, s := range b.changes {
+    if comma {
+      sb.WriteString(",")
+    }
+    sb.WriteString(s.sql)
+    comma = true
+
+    if val, ok := s.arg.([]interface{}); ok {
+      args = append(args, val...)
+    } else if s.arg != nil {
+      args = append(args, s.arg)
+    }
+  }
+
+  if b.where != nil {
+    whereSQL, whereArgs := b.where.sql()
+    sb.WriteString(" ")
+    sb.WriteString(whereSQL)
+    args = append(args, whereArgs...)
+  }
+  return sb.String(), args
+}
+
+func (b *{{$updateBuilder}}) Exec(ctx context.Context) (int64, error) {
+  sql, args := b.SQL()
+  info := &queryInfo{
+    ctx: ctx,
+    table: b.table,
+    op: OpUpdate,
+    query: sql,
+    args: args,
+  }
+  err := b.db.runBeforeHooks(info)
+  if err != nil {
+    return 0, err
+  }
+  ctx = info.ctx
+
+  if info.modified {
+    b.table = info.table
+    sql, _ = b.SQL()
+    args = info.args
+  }
+
+  res, err := b.db.ext.ExecContext(ctx, sql, args...)
+  if err != nil {
+    return 0, err
+  }
+  ra, err := res.RowsAffected()
+  if err != nil {
+    return 0, err
+  }
+
+  info.value = ra
+  return ra, b.db.runAfterHooks(info)
+}
+
+func (b *{{$updateBuilder}}) set(field string, sql string, arg interface{}) {
+  s, exists := b.changes[field]
+  if exists {
+    s.sql = sql
+    s.arg = arg
+    return
+  }
+
+  b.changes[field] = &set{
+    sql: sql,
+    arg: arg,
+  }
+}

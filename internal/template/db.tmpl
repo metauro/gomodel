@@ -1,0 +1,58 @@
+package {{.Pkg}}
+
+import (
+  "github.com/jmoiron/sqlx"
+)
+
+type {{$db}} struct {
+  ext sqlx.ExtContext
+  hooks []Hook
+}
+
+func New{{$db}}(db sqlx.ExtContext) *{{$db}} {
+  return &{{$db}}{
+    ext: db,
+  }
+}
+
+func (db *{{$db}}) Insert() *{{$insertBuilder}} {
+  return new{{$insertBuilder | titleCase}}(db)
+}
+
+func (db *{{$db}}) Update() *{{$updateBuilder}} {
+  return new{{$updateBuilder | titleCase}}(db)
+}
+
+func (db *{{$db}}) Select() *{{$selectBuilder}} {
+  return new{{$selectBuilder | titleCase}}(db)
+}
+
+func (db *{{$db}}) Delete() *{{$deleteBuilder}} {
+  return new{{$deleteBuilder | titleCase}}(db)
+}
+
+func (db *{{$db}}) Use(hooks ...Hook) {
+  for _, hook := range hooks {
+    db.hooks = append(db.hooks, hook)
+  }
+}
+
+func (db *{{$db}}) runBeforeHooks(info *queryInfo) error {
+  for _, hook := range db.hooks {
+      err := hook.Before(info)
+      if err != nil {
+        return err
+      }
+  }
+  return nil
+}
+
+func (db *{{$db}}) runAfterHooks(info *queryInfo) error {
+  for _, hook := range db.hooks {
+      err := hook.After(info)
+      if err != nil {
+        return err
+      }
+  }
+  return nil
+}

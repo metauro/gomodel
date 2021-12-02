@@ -1,62 +1,39 @@
 package gomodel
 
-import (
-	"context"
-	"database/sql"
+import "context"
+
+type Op uint
+
+const (
+	OpInsert Op = 1 << iota // insert data
+	OpUpdate                // update data
+	OpSelect                // select data
+	OpDelete                // delete data
 )
 
-type Execer interface {
-	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
-	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
-	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+//go:generate stringer -type Op
+
+type Hook interface {
+	Before(info QueryInfo) error
+	After(info QueryInfo) error
 }
 
-type DB struct {
-	*sql.DB
-}
-
-func Open(driverName, dataSourceName string) (*DB, error) {
-	db, err := sql.Open(driverName, dataSourceName)
-	if err != nil {
-		return nil, err
-	}
-	return &DB{db}, nil
-}
-
-func (db *DB) MustBegin() *sql.Tx {
-	return db.MustBeginTx(context.Background(), nil)
-}
-
-func (db *DB) MustBeginTx(ctx context.Context, opts *sql.TxOptions) *sql.Tx {
-	tx, err := db.BeginTx(ctx, opts)
-	if err != nil {
-		panic(err)
-	}
-	return tx
-}
-
-func (db *DB) BeginFn(fn func(tx *sql.Tx) error) error {
-	return db.BeginTxFn(context.Background(), nil, fn)
-}
-
-func (db *DB) BeginTxFn(ctx context.Context, opts *sql.TxOptions, fn func(tx *sql.Tx) error) (err error) {
-	defer func() {
-		if err == nil {
-			err = recover().(error)
-		}
-	}()
-
-	tx, err := db.BeginTx(ctx, opts)
-	err = fn(tx)
-	return
-}
-
-func (db *DB) MustBeginFn(fn func(tx *sql.Tx) error) {
-	db.MustBeginTxFn(context.Background(), nil, fn)
-}
-
-func (db *DB) MustBeginTxFn(ctx context.Context, opts *sql.TxOptions, fn func(tx *sql.Tx) error) {
-	if err := db.BeginTxFn(ctx, opts, fn); err != nil {
-		panic(err)
-	}
+type QueryInfo interface {
+	Context() context.Context
+	SetContext(ctx context.Context)
+	Table() string
+	SetTable(table string)
+	Op() Op
+	// Query return sql string
+	Query() string
+	// Fields return select/update/insert fields
+	Fields() []string
+	AddField(field string)
+	// Args return sql args
+	Args() []interface{}
+	AddArg(arg interface{})
+	// Value return sql execute result
+	Value() interface{}
+	// Err return sql execute error
+	Err() error
 }

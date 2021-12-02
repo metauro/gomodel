@@ -1,0 +1,15 @@
+{{- $insertBuilder := (print .TitleName "InsertBuilder") -}}
+{{- $updateBuilder := (print .TitleName "UpdateBuilder") -}}
+{{- $selectBuilder := (print .TitleName "SelectBuilder") -}}
+{{- $deleteBuilder := (print .TitleName "DeleteBuilder") -}}
+{{- $whereBuilder := (print .TitleName "WhereBuilder") -}}
+{{- $orderBuilder := (print .TitleName "OrderBuilder") -}}
+{{- $db := (print .TitleName "DB") -}}
+{{- $table := (print .TitleName "Table") -}}
+{{- $fields := "" -}}
+{{- range $i, $field := .Fields -}}
+{{- if $i -}}
+{{$fields = (print $fields ",")}}
+{{- end -}}
+{{$fields = (print $fields $field.SQLName)}}
+{{- end -}}

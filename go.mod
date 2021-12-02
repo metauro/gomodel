@@ -8,6 +8,7 @@ require (
 	github.com/iancoleman/strcase v0.1.3
 	github.com/jmoiron/sqlx v1.3.3
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/smartystreets/goconvey v1.7.2
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1
 )

@@ -1,0 +1,272 @@
+package {{.Pkg}}
+
+import (
+  "context"
+  "strings"
+)
+
+type {{$selectBuilder}} struct {
+  db *{{$db}}
+  table string
+  fields []string
+  distinct bool
+  offset int
+  limit int
+  where *{{$whereBuilder}}
+  order *{{$orderBuilder}}
+}
+
+func new{{$selectBuilder | titleCase}}(db *{{$db}}) *{{$selectBuilder}} {
+  return &{{$selectBuilder}}{
+    db: db,
+    table: {{$table}},
+    fields: {{.TitleName}}Fields,
+  }
+}
+
+// Fields 指定查询哪些字段
+func (b *{{$selectBuilder}}) Fields(fields ...string) *{{$selectBuilder}} {
+	if len(fields) == 0 {
+    return b
+  }
+
+	b.fields = fields
+	return b
+}
+
+// OmitFields 指定查询时忽略哪些字段
+func (b *{{$selectBuilder}}) OmitFields(fields ...string) *{{$selectBuilder}} {
+  if len(fields) == 0 {
+    return b
+  }
+
+  b.fields = make([]string, 0, len({{.TitleName}}Fields)-len(fields))
+omit:
+  for _, field := range {{.TitleName}}Fields {
+    for _, omitField := range fields {
+      if field == omitField {
+        continue omit
+      }
+    }
+    b.fields = append(b.fields, field)
+  }
+  return b
+}
+
+// Distinct 是否忽略相同数据
+func (b *{{$selectBuilder}}) Distinct(distinct bool) *{{$selectBuilder}} {
+  b.distinct = distinct
+  return b
+}
+
+// Limit 指定查询数量
+func (b *{{$selectBuilder}}) Limit(limit int) *{{$selectBuilder}} {
+  b.limit = limit
+  return b
+}
+
+// Offset 指定偏移量
+func (b *{{$selectBuilder}}) Offset(offset int) *{{$selectBuilder}} {
+  b.offset = offset
+  return b
+}
+
+// Where 指定查询条件
+func (b *{{$selectBuilder}}) Where(fn func(b *{{$whereBuilder}})) *{{$selectBuilder}} {
+  if b.where == nil {
+    b.where = new{{$whereBuilder}}()
+  }
+  fn(b.where)
+  return b
+}
+
+// Order 指定排序规则
+func (b *{{$selectBuilder}}) Order(fn func(b *{{$orderBuilder}})) *{{$selectBuilder}} {
+  if b.order == nil {
+    b.order = new{{$orderBuilder}}()
+  }
+  fn(b.order)
+  return b
+}
+
+func (b *{{$selectBuilder}}) SQL() (string, []interface{}) {
+  var sb strings.Builder
+
+  sb.WriteString("SELECT ")
+  if b.distinct {
+    sb.WriteString("DISTINCT ")
+  }
+  sb.WriteString(b.fields[0])
+  for i, size := 1, len(b.fields); i < size; i++ {
+    sb.WriteString(",")
+    sb.WriteString(b.fields[i])
+  }
+
+  sb.WriteString(" FROM ")
+  sb.WriteString("`")
+  sb.WriteString(b.table)
+  sb.WriteString("`")
+
+  args := make([]interface{}, 0, 2)
+  if b.where != nil {
+    whereSQL, whereArgs := b.where.sql()
+    args = make([]interface{}, 0, len(whereArgs)+2)
+    sb.WriteString(" ")
+    sb.WriteString(whereSQL)
+    args = append(args, whereArgs...)
+  }
+
+  if b.order != nil {
+    orderSQL := b.order.sql()
+    sb.WriteString(" ")
+    sb.WriteString(orderSQL)
+  }
+
+  if b.limit > 0 {
+    sb.WriteString(" LIMIT ?")
+    args = append(args, b.limit)
+  }
+
+  if b.offset > 0 {
+    sb.WriteString(" OFFSET ?")
+    args = append(args, b.offset)
+  }
+
+  return sb.String(), args
+}
+
+// Get 获取单条数据
+func (b *{{$selectBuilder}}) Get(ctx context.Context) (*{{.TitleName}}, error) {
+  originLimit := b.limit
+  defer func() {
+    b.limit = originLimit
+  }()
+
+  b.Limit(1)
+  list, err := b.List(ctx)
+  if err != nil {
+    return nil, err
+  }
+
+  if len(list) == 0 {
+    return nil, ErrNoRows
+  }
+
+  return list[0], nil
+}
+
+// List 获取多条数据
+func (b *{{$selectBuilder}}) List(ctx context.Context) ([]*{{.TitleName}}, error) {
+  sql, args := b.SQL()
+  info := &queryInfo{
+    ctx: ctx,
+    table: b.table,
+    op: OpSelect,
+    query: sql,
+    fields: b.fields,
+    args: args,
+  }
+
+  err := b.db.runBeforeHooks(info)
+  if err != nil {
+    return nil, err
+  }
+  if info.modified {
+      b.fields = info.fields
+      b.table = info.table
+      ctx = info.ctx
+      sql, _ = b.SQL()
+      args = info.args
+  }
+
+	rows, err := b.db.ext.QueryxContext(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	res := make([]*{{$.TitleName}}, 0)
+	scanners := make([]interface{}, len(b.fields))
+	for rows.Next() {
+		m := &{{$.TitleName}}{}
+    for i, field := range b.fields {
+      switch field {
+        {{range $field := .Fields -}}
+        case "{{$field.SQLName}}":
+          scanners[i] = &m.{{$field.TitleName}}
+        {{end -}}
+      }
+    }
+		if err := rows.Scan(scanners...); err != nil {
+			return nil, err
+		}
+		res = append(res, m)
+	}
+
+  info.value = res
+	return res, b.db.runAfterHooks(info)
+}
+
+func (b *{{$selectBuilder}}) Count(ctx context.Context) (int64, error) {
+  originFields := b.fields
+  defer func() {
+    b.fields = originFields
+  }()
+
+  b.Fields("COUNT(1) AS `count`")
+  sql, args := b.SQL()
+
+  info := &queryInfo{
+    ctx: ctx,
+    table: b.table,
+    op: OpSelect,
+    query: sql,
+    args: args,
+  }
+  err := b.db.runBeforeHooks(info)
+  if err != nil {
+    return 0, err
+  }
+  ctx = info.ctx
+  if info.modified {
+    b.table = info.table
+    sql, _ = b.SQL()
+    args = info.args
+  }
+
+	row := b.db.ext.QueryRowxContext(ctx, sql, args...)
+  if row.Err() != nil {
+    return 0, row.Err()
+  }
+
+  var count int64
+  err = row.Scan(&count)
+  if err != nil {
+    return 0, err
+  }
+
+  info.value = count
+  return count, b.db.runAfterHooks(info)
+}
+
+func (b *{{$selectBuilder}}) Page(ctx context.Context, page, pageSize int) ([]*{{.TitleName}}, int64, error) {
+  originOffset := b.offset
+  originLimit := b.limit
+  defer func() {
+    b.offset = originOffset
+    b.limit = originLimit
+  }()
+  b.offset = page * pageSize
+  b.limit = pageSize
+
+  list, err := b.List(ctx)
+  if err != nil {
+    return nil, 0, err
+  }
+
+  count, err := b.Count(ctx)
+  if err != nil {
+    return nil, 0, err
+  }
+
+  return list, count, nil
+}

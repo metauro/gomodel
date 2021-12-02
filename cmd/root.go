@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"github.com/jmoiron/sqlx"
 	"github.com/metauro/gomodel/internal/msql"
 	"github.com/spf13/cobra"
 )
 
-var cfgFile string
-var db *sqlx.DB
+var driveName string
+var dsn string
+var db *msql.DB
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -29,12 +29,15 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	// Find home directory.
-	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", `Config file path (default "$HOME/.gomodel.toml")`)
+	rootCmd.PersistentFlags().StringVar(&dsn, "dsn", "", "eg: root:root@(localhost:3306)/test?parseTime=true")
+	rootCmd.PersistentFlags().StringVar(&driveName, "drive-name", "mysql", "mysql,postgres")
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	config, err := NewConfig()
-	cobra.CheckErr(err)
-	db = msql.Open(config.MySQL)
+	var err error
+	db, err = msql.Open(driveName, dsn)
+	if err != nil {
+		panic(err)
+	}
 }

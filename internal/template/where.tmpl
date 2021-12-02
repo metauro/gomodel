@@ -1,0 +1,148 @@
+package {{.Pkg}}
+
+import (
+  "strings"
+  "time"
+)
+
+var _ = time.Second
+
+type {{$whereBuilder}} struct {
+  sb strings.Builder
+  args []interface{}
+}
+
+func new{{$whereBuilder | titleCase}}() *{{$whereBuilder}} {
+  b := &{{$whereBuilder}}{}
+  {{if $.SoftDeleteColumn -}}
+  b.sb.WriteString("WHERE ({{$.SoftDeleteColumn}} IS NULL) AND ")
+  {{- else -}}
+  b.sb.WriteString("WHERE ")
+  {{end -}}
+  return b
+}
+
+func (b *{{$whereBuilder}}) And() *{{$whereBuilder}} {
+  b.sb.WriteString(" AND ")
+  return b
+}
+
+func (b *{{$whereBuilder}}) Or() *{{$whereBuilder}} {
+  b.sb.WriteString(" OR ")
+  return b
+}
+
+func (b *{{$whereBuilder}}) ConditionGroup(fn func(b *{{$whereBuilder}})) *{{$whereBuilder}} {
+  b.sb.WriteString("(")
+  fn(b)
+  b.sb.WriteString(")")
+  return b
+}
+
+{{range $.Fields -}}
+func (b *{{$whereBuilder}}) {{.TitleName}}EQ({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+	b.sb.WriteString("{{.SQLName}}={{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+	return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}NEQ({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+	b.sb.WriteString("{{.SQLName}}<>{{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+	return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}In({{.CamelName}}List ...{{.Type}}) *{{$whereBuilder}} {
+	if len({{.CamelName}}List) == 0 {
+	  return b
+	}
+
+	b.sb.WriteString("{{.SQLName}} IN ({{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}}List[0])
+  for i, size := 1, len({{.CamelName}}List); i < size; i++ {
+    b.sb.WriteString(",{{$.Placeholder}}")
+    b.args = append(b.args, {{.CamelName}}List[i])
+  }
+  b.sb.WriteString(")")
+  return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}NotIn({{.CamelName}}List ...{{.Type}}) *{{$whereBuilder}} {
+	if len({{.CamelName}}List) == 0 {
+	  return b
+	}
+
+  b.sb.WriteString("{{.SQLName}} NOT IN ({{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}}List[0])
+  for i, size := 1, len({{.CamelName}}List); i < size; i++ {
+    b.sb.WriteString(",{{$.Placeholder}}")
+    b.args = append(b.args, {{.CamelName}}List[i])
+  }
+  b.sb.WriteString(")")
+	return b
+}
+
+{{if .Nullable}}
+func (b *{{$whereBuilder}}) {{.TitleName}}IsNil() *{{$whereBuilder}} {
+	b.sb.WriteString("{{.SQLName}} IS NULL")
+	return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}IsNotNil() *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}} IS NOT NULL")
+  return b
+}
+{{end}}
+
+{{if eq .Type "string"}}
+func (b *{{$whereBuilder}}) {{.TitleName}}Like({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}} LIKE {{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+  return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}NotLike({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}} NOT LIKE {{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+  return b
+}
+{{end -}}
+
+{{if eq .Type "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"
+"time.Time"}}
+func (b *{{$whereBuilder}}) {{.TitleName}}GT({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}}>{{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+  return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}GTE({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}}>={{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+  return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}LT({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}}<{{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+  return b
+}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}LTE({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}}<={{$.Placeholder}}")
+  b.args = append(b.args, {{.CamelName}})
+  return b
+}
+{{end}}
+
+func (b *{{$whereBuilder}}) {{.TitleName}}Raw(raw string, args ...interface{}) *{{$whereBuilder}} {
+  b.sb.WriteString("{{.SQLName}}")
+  b.sb.WriteString(raw)
+  b.args = append(b.args, args...)
+  return b
+}
+{{end}}
+
+func (b *{{$whereBuilder}}) sql() (string, []interface{}) {
+  return b.sb.String(), b.args
+}
