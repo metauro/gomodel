@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/iancoleman/strcase"
+	"github.com/metauro/gomodel/internal/msql"
 	"github.com/metauro/gomodel/internal/template"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,6 +41,8 @@ type Field struct {
 }
 
 type GenConfig struct {
+	DriveName        string
+	Dsn              string
 	Prefix           string
 	AppendPrefix     bool
 	SelectAllTable   bool
@@ -55,6 +58,8 @@ var genCmd = &cobra.Command{
 	Short: "Generate code from tables",
 	Run: func(cmd *cobra.Command, args []string) {
 		c := &GenConfig{
+			DriveName:        viper.GetString("drive-name"),
+			Dsn:              viper.GetString("dsn"),
 			Prefix:           viper.GetString("prefix"),
 			AppendPrefix:     viper.GetBool("append-prefix"),
 			SelectAllTable:   viper.GetBool("all"),
@@ -64,11 +69,16 @@ var genCmd = &cobra.Command{
 			TimeString:       viper.GetBool("time-string"),
 		}
 		pkg := strcase.ToSnake(filepath.Base(c.Output))
-		tables, err := getTables(c)
+
+		db, err := msql.Open(c.DriveName, c.Dsn)
 		if err != nil {
 			panic(err)
 		}
-		cobra.CheckErr(err)
+
+		tables, err := getTables(db, c)
+		if err != nil {
+			panic(err)
+		}
 
 		if len(tables) == 0 {
 			log.Printf("no tables need to generate\n")
@@ -107,7 +117,7 @@ var genCmd = &cobra.Command{
 			}
 
 			name = strcase.ToCamel(name)
-			fields, err := getFieldsFromTable(table, c)
+			fields, err := getFieldsFromTable(db, table, c)
 			if err != nil {
 				panic(err)
 			}
@@ -189,10 +199,12 @@ func init() {
 	ZeroValue - field golang zero value
 `)
 	genCmd.Flags().Bool("time-string", false, "Use string instead time.Time")
+	genCmd.Flags().String("dsn", "", "eg: root:root@(localhost:3306)/test?parseTime=true")
+	genCmd.Flags().String("drive-name", "mysql", "eg: mysql,postgres")
 	cobra.CheckErr(viper.BindPFlags(genCmd.Flags()))
 }
 
-func getTables(c *GenConfig) ([]string, error) {
+func getTables(db *msql.DB, c *GenConfig) ([]string, error) {
 	tables, err := db.GetTables()
 	if err != nil {
 		return nil, err
@@ -229,7 +241,7 @@ func getTables(c *GenConfig) ([]string, error) {
 	return result, nil
 }
 
-func getFieldsFromTable(table string, c *GenConfig) ([]*Field, error) {
+func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, error) {
 	typeMap := map[string]string{
 		// numeric type
 		"tinyint":   "int8",
