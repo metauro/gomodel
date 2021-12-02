@@ -1,3 +1,3 @@
 package gomodel
 
-const VERSION = "v0.9.0"
+const VERSION = "v0.10.0"
