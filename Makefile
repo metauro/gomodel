@@ -3,7 +3,7 @@ release:
 	echo "package gomodel" >> version.go; \
 	echo "" >> version.go; \
 	echo "const VERSION = \"$(version)\"" >> version.go; \
-	git add .; \
+	git add ./version.go; \
 	git commit -m "chore(release): $(version)"; \
 	git tag $(version); \
 	git push; \
