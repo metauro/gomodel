@@ -10,3 +10,8 @@ release:
 	git push --tags \
 	go list -m github.com/metauro/gomodel@$(version)
 
+install:
+	go install ./cmd/gomodel
+
+build:
+	go build -o gomodel ./cmd/gomodel/main.go
