@@ -29,152 +29,152 @@ func (b *GomodelUpdateBuilder) Set(gomodel *Gomodel) *GomodelUpdateBuilder {
 		b.set("Tinyint", "`tinyint`=?", gomodel.Tinyint)
 	}
 
-	if gomodel.Smallint != 0 {
-		b.set("Smallint", "`smallint`=?", gomodel.Smallint)
+	if gomodel.Smallint.IsValid() {
+		b.set("Smallint", "`smallint`=?", gomodel.Smallint.Int16)
 	}
 
-	if gomodel.Mediumint != 0 {
-		b.set("Mediumint", "`mediumint`=?", gomodel.Mediumint)
+	if gomodel.Mediumint.IsValid() {
+		b.set("Mediumint", "`mediumint`=?", gomodel.Mediumint.Int32)
 	}
 
-	if gomodel.Int != 0 {
-		b.set("Int", "`int`=?", gomodel.Int)
+	if gomodel.Int.IsValid() {
+		b.set("Int", "`int`=?", gomodel.Int.Int)
 	}
 
-	if gomodel.Bigint != 0 {
-		b.set("Bigint", "`bigint`=?", gomodel.Bigint)
+	if gomodel.Bigint.IsValid() {
+		b.set("Bigint", "`bigint`=?", gomodel.Bigint.Int64)
 	}
 
-	if gomodel.Float != 0 {
-		b.set("Float", "`float`=?", gomodel.Float)
+	if gomodel.Float.IsValid() {
+		b.set("Float", "`float`=?", gomodel.Float.Float32)
 	}
 
-	if gomodel.Double != 0 {
-		b.set("Double", "`double`=?", gomodel.Double)
+	if gomodel.Double.IsValid() {
+		b.set("Double", "`double`=?", gomodel.Double.Float64)
 	}
 
-	if gomodel.Decimal != 0 {
-		b.set("Decimal", "`decimal`=?", gomodel.Decimal)
+	if gomodel.Decimal.IsValid() {
+		b.set("Decimal", "`decimal`=?", gomodel.Decimal.Float64)
 	}
 
-	if gomodel.Utinyint != 0 {
-		b.set("Utinyint", "`utinyint`=?", gomodel.Utinyint)
+	if gomodel.Utinyint.IsValid() {
+		b.set("Utinyint", "`utinyint`=?", gomodel.Utinyint.Uint8)
 	}
 
-	if gomodel.Usmallint != 0 {
-		b.set("Usmallint", "`usmallint`=?", gomodel.Usmallint)
+	if gomodel.Usmallint.IsValid() {
+		b.set("Usmallint", "`usmallint`=?", gomodel.Usmallint.Uint16)
 	}
 
-	if gomodel.Umediumint != 0 {
-		b.set("Umediumint", "`umediumint`=?", gomodel.Umediumint)
+	if gomodel.Umediumint.IsValid() {
+		b.set("Umediumint", "`umediumint`=?", gomodel.Umediumint.Uint32)
 	}
 
-	if gomodel.Uint != 0 {
-		b.set("Uint", "`uint`=?", gomodel.Uint)
+	if gomodel.Uint.IsValid() {
+		b.set("Uint", "`uint`=?", gomodel.Uint.Uint)
 	}
 
-	if gomodel.Ubigint != 0 {
-		b.set("Ubigint", "`ubigint`=?", gomodel.Ubigint)
+	if gomodel.Ubigint.IsValid() {
+		b.set("Ubigint", "`ubigint`=?", gomodel.Ubigint.Uint64)
 	}
 
-	if gomodel.Ufloat != 0 {
-		b.set("Ufloat", "`ufloat`=?", gomodel.Ufloat)
+	if gomodel.Ufloat.IsValid() {
+		b.set("Ufloat", "`ufloat`=?", gomodel.Ufloat.Float32)
 	}
 
-	if gomodel.Udouble != 0 {
-		b.set("Udouble", "`udouble`=?", gomodel.Udouble)
+	if gomodel.Udouble.IsValid() {
+		b.set("Udouble", "`udouble`=?", gomodel.Udouble.Float64)
 	}
 
-	if gomodel.Udecimal != 0 {
-		b.set("Udecimal", "`udecimal`=?", gomodel.Udecimal)
+	if gomodel.Udecimal.IsValid() {
+		b.set("Udecimal", "`udecimal`=?", gomodel.Udecimal.Float64)
 	}
 
-	if !gomodel.Date.IsZero() {
-		b.set("Date", "`date`=?", gomodel.Date)
+	if gomodel.Date.IsValid() {
+		b.set("Date", "`date`=?", gomodel.Date.Time)
 	}
 
-	if !gomodel.Datetime.IsZero() {
-		b.set("Datetime", "`datetime`=?", gomodel.Datetime)
+	if gomodel.Datetime.IsValid() {
+		b.set("Datetime", "`datetime`=?", gomodel.Datetime.Time)
 	}
 
 	if !gomodel.Timestamp.IsZero() {
 		b.set("Timestamp", "`timestamp`=?", gomodel.Timestamp)
 	}
 
-	if !gomodel.Time.IsZero() {
-		b.set("Time", "`time`=?", gomodel.Time)
+	if gomodel.Time.IsValid() {
+		b.set("Time", "`time`=?", gomodel.Time.Time)
 	}
 
-	if !gomodel.Year.IsZero() {
-		b.set("Year", "`year`=?", gomodel.Year)
+	if gomodel.Year.IsValid() {
+		b.set("Year", "`year`=?", gomodel.Year.Time)
 	}
 
-	if gomodel.Char != "" {
-		b.set("Char", "`char`=?", gomodel.Char)
+	if gomodel.Char.IsValid() {
+		b.set("Char", "`char`=?", gomodel.Char.String)
 	}
 
-	if gomodel.Varchar != "" {
-		b.set("Varchar", "`varchar`=?", gomodel.Varchar)
+	if gomodel.Varchar.IsValid() {
+		b.set("Varchar", "`varchar`=?", gomodel.Varchar.String)
 	}
 
-	if gomodel.Binary != "" {
-		b.set("Binary", "`binary`=?", gomodel.Binary)
+	if gomodel.Binary.IsValid() {
+		b.set("Binary", "`binary`=?", gomodel.Binary.String)
 	}
 
-	if gomodel.Varbinary != "" {
-		b.set("Varbinary", "`varbinary`=?", gomodel.Varbinary)
+	if gomodel.Varbinary.IsValid() {
+		b.set("Varbinary", "`varbinary`=?", gomodel.Varbinary.String)
 	}
 
-	if gomodel.Tinyblob != "" {
-		b.set("Tinyblob", "`tinyblob`=?", gomodel.Tinyblob)
+	if gomodel.Tinyblob.IsValid() {
+		b.set("Tinyblob", "`tinyblob`=?", gomodel.Tinyblob.String)
 	}
 
-	if gomodel.Tinytext != "" {
-		b.set("Tinytext", "`tinytext`=?", gomodel.Tinytext)
+	if gomodel.Tinytext.IsValid() {
+		b.set("Tinytext", "`tinytext`=?", gomodel.Tinytext.String)
 	}
 
-	if gomodel.Blob != "" {
-		b.set("Blob", "`blob`=?", gomodel.Blob)
+	if gomodel.Blob.IsValid() {
+		b.set("Blob", "`blob`=?", gomodel.Blob.String)
 	}
 
-	if gomodel.Text != "" {
-		b.set("Text", "`text`=?", gomodel.Text)
+	if gomodel.Text.IsValid() {
+		b.set("Text", "`text`=?", gomodel.Text.String)
 	}
 
-	if gomodel.Mediumblob != "" {
-		b.set("Mediumblob", "`mediumblob`=?", gomodel.Mediumblob)
+	if gomodel.Mediumblob.IsValid() {
+		b.set("Mediumblob", "`mediumblob`=?", gomodel.Mediumblob.String)
 	}
 
-	if gomodel.Mediumtext != "" {
-		b.set("Mediumtext", "`mediumtext`=?", gomodel.Mediumtext)
+	if gomodel.Mediumtext.IsValid() {
+		b.set("Mediumtext", "`mediumtext`=?", gomodel.Mediumtext.String)
 	}
 
-	if gomodel.Longblob != "" {
-		b.set("Longblob", "`longblob`=?", gomodel.Longblob)
+	if gomodel.Longblob.IsValid() {
+		b.set("Longblob", "`longblob`=?", gomodel.Longblob.String)
 	}
 
-	if gomodel.Longtext != "" {
-		b.set("Longtext", "`longtext`=?", gomodel.Longtext)
+	if gomodel.Longtext.IsValid() {
+		b.set("Longtext", "`longtext`=?", gomodel.Longtext.String)
 	}
 
-	if gomodel.Enum != "" {
-		b.set("Enum", "`enum`=?", gomodel.Enum)
+	if gomodel.Enum.IsValid() {
+		b.set("Enum", "`enum`=?", gomodel.Enum.String)
 	}
 
-	if gomodel.Set != "" {
-		b.set("Set", "`set`=?", gomodel.Set)
+	if gomodel.Set.IsValid() {
+		b.set("Set", "`set`=?", gomodel.Set.String)
 	}
 
-	if gomodel.Json != "" {
-		b.set("Json", "`json`=?", gomodel.Json)
+	if gomodel.Json.IsValid() {
+		b.set("Json", "`json`=?", gomodel.Json.String)
 	}
 
-	if gomodel.Tinybool != false {
-		b.set("Tinybool", "`tinybool`=?", gomodel.Tinybool)
+	if gomodel.Tinybool.IsValid() {
+		b.set("Tinybool", "`tinybool`=?", gomodel.Tinybool.Bool)
 	}
 
-	if gomodel.Bool != false {
-		b.set("Bool", "`bool`=?", gomodel.Bool)
+	if gomodel.Bool.IsValid() {
+		b.set("Bool", "`bool`=?", gomodel.Bool.Bool)
 	}
 
 	return b
@@ -230,8 +230,8 @@ func (b *GomodelUpdateBuilder) SetSmallintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetSmallintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetSmallintNil() *GomodelUpdateBuilder {
+// SetSmallintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetSmallintNull() *GomodelUpdateBuilder {
 	b.set("`smallint`", "`smallint`=NULL", nil)
 	return b
 }
@@ -264,8 +264,8 @@ func (b *GomodelUpdateBuilder) SetMediumintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetMediumintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetMediumintNil() *GomodelUpdateBuilder {
+// SetMediumintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetMediumintNull() *GomodelUpdateBuilder {
 	b.set("`mediumint`", "`mediumint`=NULL", nil)
 	return b
 }
@@ -277,17 +277,17 @@ func (b *GomodelUpdateBuilder) SetMediumintRaw(sql string, args ...interface{}) 
 }
 
 // SetInt 将字段更新为指定值
-func (b *GomodelUpdateBuilder) SetInt(int int32) *GomodelUpdateBuilder {
+func (b *GomodelUpdateBuilder) SetInt(int int) *GomodelUpdateBuilder {
 	b.set("`int`", "`int`=?", int)
 	return b
 }
 
-func (b *GomodelUpdateBuilder) IncrInt(val int32) *GomodelUpdateBuilder {
+func (b *GomodelUpdateBuilder) IncrInt(val int) *GomodelUpdateBuilder {
 	b.set("`int`", "`int`=`int`+?", val)
 	return b
 }
 
-func (b *GomodelUpdateBuilder) DecrInt(val int32) *GomodelUpdateBuilder {
+func (b *GomodelUpdateBuilder) DecrInt(val int) *GomodelUpdateBuilder {
 	b.set("`int`", "`int`=`int`-?", val)
 	return b
 }
@@ -298,8 +298,8 @@ func (b *GomodelUpdateBuilder) SetIntZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetIntNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetIntNil() *GomodelUpdateBuilder {
+// SetIntNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetIntNull() *GomodelUpdateBuilder {
 	b.set("`int`", "`int`=NULL", nil)
 	return b
 }
@@ -332,8 +332,8 @@ func (b *GomodelUpdateBuilder) SetBigintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetBigintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetBigintNil() *GomodelUpdateBuilder {
+// SetBigintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetBigintNull() *GomodelUpdateBuilder {
 	b.set("`bigint`", "`bigint`=NULL", nil)
 	return b
 }
@@ -366,8 +366,8 @@ func (b *GomodelUpdateBuilder) SetFloatZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetFloatNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetFloatNil() *GomodelUpdateBuilder {
+// SetFloatNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetFloatNull() *GomodelUpdateBuilder {
 	b.set("`float`", "`float`=NULL", nil)
 	return b
 }
@@ -400,8 +400,8 @@ func (b *GomodelUpdateBuilder) SetDoubleZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetDoubleNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetDoubleNil() *GomodelUpdateBuilder {
+// SetDoubleNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetDoubleNull() *GomodelUpdateBuilder {
 	b.set("`double`", "`double`=NULL", nil)
 	return b
 }
@@ -434,8 +434,8 @@ func (b *GomodelUpdateBuilder) SetDecimalZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetDecimalNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetDecimalNil() *GomodelUpdateBuilder {
+// SetDecimalNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetDecimalNull() *GomodelUpdateBuilder {
 	b.set("`decimal`", "`decimal`=NULL", nil)
 	return b
 }
@@ -468,8 +468,8 @@ func (b *GomodelUpdateBuilder) SetUtinyintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUtinyintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUtinyintNil() *GomodelUpdateBuilder {
+// SetUtinyintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUtinyintNull() *GomodelUpdateBuilder {
 	b.set("`utinyint`", "`utinyint`=NULL", nil)
 	return b
 }
@@ -502,8 +502,8 @@ func (b *GomodelUpdateBuilder) SetUsmallintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUsmallintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUsmallintNil() *GomodelUpdateBuilder {
+// SetUsmallintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUsmallintNull() *GomodelUpdateBuilder {
 	b.set("`usmallint`", "`usmallint`=NULL", nil)
 	return b
 }
@@ -536,8 +536,8 @@ func (b *GomodelUpdateBuilder) SetUmediumintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUmediumintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUmediumintNil() *GomodelUpdateBuilder {
+// SetUmediumintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUmediumintNull() *GomodelUpdateBuilder {
 	b.set("`umediumint`", "`umediumint`=NULL", nil)
 	return b
 }
@@ -549,17 +549,17 @@ func (b *GomodelUpdateBuilder) SetUmediumintRaw(sql string, args ...interface{})
 }
 
 // SetUint 将字段更新为指定值
-func (b *GomodelUpdateBuilder) SetUint(uint uint32) *GomodelUpdateBuilder {
+func (b *GomodelUpdateBuilder) SetUint(uint uint) *GomodelUpdateBuilder {
 	b.set("`uint`", "`uint`=?", uint)
 	return b
 }
 
-func (b *GomodelUpdateBuilder) IncrUint(val uint32) *GomodelUpdateBuilder {
+func (b *GomodelUpdateBuilder) IncrUint(val uint) *GomodelUpdateBuilder {
 	b.set("`uint`", "`uint`=`uint`+?", val)
 	return b
 }
 
-func (b *GomodelUpdateBuilder) DecrUint(val uint32) *GomodelUpdateBuilder {
+func (b *GomodelUpdateBuilder) DecrUint(val uint) *GomodelUpdateBuilder {
 	b.set("`uint`", "`uint`=`uint`-?", val)
 	return b
 }
@@ -570,8 +570,8 @@ func (b *GomodelUpdateBuilder) SetUintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUintNil() *GomodelUpdateBuilder {
+// SetUintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUintNull() *GomodelUpdateBuilder {
 	b.set("`uint`", "`uint`=NULL", nil)
 	return b
 }
@@ -604,8 +604,8 @@ func (b *GomodelUpdateBuilder) SetUbigintZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUbigintNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUbigintNil() *GomodelUpdateBuilder {
+// SetUbigintNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUbigintNull() *GomodelUpdateBuilder {
 	b.set("`ubigint`", "`ubigint`=NULL", nil)
 	return b
 }
@@ -638,8 +638,8 @@ func (b *GomodelUpdateBuilder) SetUfloatZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUfloatNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUfloatNil() *GomodelUpdateBuilder {
+// SetUfloatNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUfloatNull() *GomodelUpdateBuilder {
 	b.set("`ufloat`", "`ufloat`=NULL", nil)
 	return b
 }
@@ -672,8 +672,8 @@ func (b *GomodelUpdateBuilder) SetUdoubleZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUdoubleNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUdoubleNil() *GomodelUpdateBuilder {
+// SetUdoubleNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUdoubleNull() *GomodelUpdateBuilder {
 	b.set("`udouble`", "`udouble`=NULL", nil)
 	return b
 }
@@ -706,8 +706,8 @@ func (b *GomodelUpdateBuilder) SetUdecimalZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetUdecimalNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetUdecimalNil() *GomodelUpdateBuilder {
+// SetUdecimalNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetUdecimalNull() *GomodelUpdateBuilder {
 	b.set("`udecimal`", "`udecimal`=NULL", nil)
 	return b
 }
@@ -730,8 +730,8 @@ func (b *GomodelUpdateBuilder) SetDateZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetDateNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetDateNil() *GomodelUpdateBuilder {
+// SetDateNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetDateNull() *GomodelUpdateBuilder {
 	b.set("`date`", "`date`=NULL", nil)
 	return b
 }
@@ -754,8 +754,8 @@ func (b *GomodelUpdateBuilder) SetDatetimeZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetDatetimeNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetDatetimeNil() *GomodelUpdateBuilder {
+// SetDatetimeNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetDatetimeNull() *GomodelUpdateBuilder {
 	b.set("`datetime`", "`datetime`=NULL", nil)
 	return b
 }
@@ -796,8 +796,8 @@ func (b *GomodelUpdateBuilder) SetTimeZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetTimeNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetTimeNil() *GomodelUpdateBuilder {
+// SetTimeNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetTimeNull() *GomodelUpdateBuilder {
 	b.set("`time`", "`time`=NULL", nil)
 	return b
 }
@@ -820,8 +820,8 @@ func (b *GomodelUpdateBuilder) SetYearZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetYearNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetYearNil() *GomodelUpdateBuilder {
+// SetYearNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetYearNull() *GomodelUpdateBuilder {
 	b.set("`year`", "`year`=NULL", nil)
 	return b
 }
@@ -844,8 +844,8 @@ func (b *GomodelUpdateBuilder) SetCharZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetCharNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetCharNil() *GomodelUpdateBuilder {
+// SetCharNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetCharNull() *GomodelUpdateBuilder {
 	b.set("`char`", "`char`=NULL", nil)
 	return b
 }
@@ -868,8 +868,8 @@ func (b *GomodelUpdateBuilder) SetVarcharZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetVarcharNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetVarcharNil() *GomodelUpdateBuilder {
+// SetVarcharNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetVarcharNull() *GomodelUpdateBuilder {
 	b.set("`varchar`", "`varchar`=NULL", nil)
 	return b
 }
@@ -892,8 +892,8 @@ func (b *GomodelUpdateBuilder) SetBinaryZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetBinaryNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetBinaryNil() *GomodelUpdateBuilder {
+// SetBinaryNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetBinaryNull() *GomodelUpdateBuilder {
 	b.set("`binary`", "`binary`=NULL", nil)
 	return b
 }
@@ -916,8 +916,8 @@ func (b *GomodelUpdateBuilder) SetVarbinaryZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetVarbinaryNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetVarbinaryNil() *GomodelUpdateBuilder {
+// SetVarbinaryNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetVarbinaryNull() *GomodelUpdateBuilder {
 	b.set("`varbinary`", "`varbinary`=NULL", nil)
 	return b
 }
@@ -940,8 +940,8 @@ func (b *GomodelUpdateBuilder) SetTinyblobZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetTinyblobNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetTinyblobNil() *GomodelUpdateBuilder {
+// SetTinyblobNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetTinyblobNull() *GomodelUpdateBuilder {
 	b.set("`tinyblob`", "`tinyblob`=NULL", nil)
 	return b
 }
@@ -964,8 +964,8 @@ func (b *GomodelUpdateBuilder) SetTinytextZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetTinytextNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetTinytextNil() *GomodelUpdateBuilder {
+// SetTinytextNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetTinytextNull() *GomodelUpdateBuilder {
 	b.set("`tinytext`", "`tinytext`=NULL", nil)
 	return b
 }
@@ -988,8 +988,8 @@ func (b *GomodelUpdateBuilder) SetBlobZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetBlobNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetBlobNil() *GomodelUpdateBuilder {
+// SetBlobNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetBlobNull() *GomodelUpdateBuilder {
 	b.set("`blob`", "`blob`=NULL", nil)
 	return b
 }
@@ -1012,8 +1012,8 @@ func (b *GomodelUpdateBuilder) SetTextZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetTextNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetTextNil() *GomodelUpdateBuilder {
+// SetTextNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetTextNull() *GomodelUpdateBuilder {
 	b.set("`text`", "`text`=NULL", nil)
 	return b
 }
@@ -1036,8 +1036,8 @@ func (b *GomodelUpdateBuilder) SetMediumblobZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetMediumblobNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetMediumblobNil() *GomodelUpdateBuilder {
+// SetMediumblobNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetMediumblobNull() *GomodelUpdateBuilder {
 	b.set("`mediumblob`", "`mediumblob`=NULL", nil)
 	return b
 }
@@ -1060,8 +1060,8 @@ func (b *GomodelUpdateBuilder) SetMediumtextZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetMediumtextNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetMediumtextNil() *GomodelUpdateBuilder {
+// SetMediumtextNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetMediumtextNull() *GomodelUpdateBuilder {
 	b.set("`mediumtext`", "`mediumtext`=NULL", nil)
 	return b
 }
@@ -1084,8 +1084,8 @@ func (b *GomodelUpdateBuilder) SetLongblobZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetLongblobNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetLongblobNil() *GomodelUpdateBuilder {
+// SetLongblobNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetLongblobNull() *GomodelUpdateBuilder {
 	b.set("`longblob`", "`longblob`=NULL", nil)
 	return b
 }
@@ -1108,8 +1108,8 @@ func (b *GomodelUpdateBuilder) SetLongtextZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetLongtextNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetLongtextNil() *GomodelUpdateBuilder {
+// SetLongtextNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetLongtextNull() *GomodelUpdateBuilder {
 	b.set("`longtext`", "`longtext`=NULL", nil)
 	return b
 }
@@ -1132,8 +1132,8 @@ func (b *GomodelUpdateBuilder) SetEnumZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetEnumNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetEnumNil() *GomodelUpdateBuilder {
+// SetEnumNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetEnumNull() *GomodelUpdateBuilder {
 	b.set("`enum`", "`enum`=NULL", nil)
 	return b
 }
@@ -1156,8 +1156,8 @@ func (b *GomodelUpdateBuilder) SetSetZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetSetNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetSetNil() *GomodelUpdateBuilder {
+// SetSetNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetSetNull() *GomodelUpdateBuilder {
 	b.set("`set`", "`set`=NULL", nil)
 	return b
 }
@@ -1180,8 +1180,8 @@ func (b *GomodelUpdateBuilder) SetJsonZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetJsonNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetJsonNil() *GomodelUpdateBuilder {
+// SetJsonNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetJsonNull() *GomodelUpdateBuilder {
 	b.set("`json`", "`json`=NULL", nil)
 	return b
 }
@@ -1204,8 +1204,8 @@ func (b *GomodelUpdateBuilder) SetTinyboolZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetTinyboolNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetTinyboolNil() *GomodelUpdateBuilder {
+// SetTinyboolNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetTinyboolNull() *GomodelUpdateBuilder {
 	b.set("`tinybool`", "`tinybool`=NULL", nil)
 	return b
 }
@@ -1228,8 +1228,8 @@ func (b *GomodelUpdateBuilder) SetBoolZero() *GomodelUpdateBuilder {
 	return b
 }
 
-// SetBoolNil 将字段更新为 nil
-func (b *GomodelUpdateBuilder) SetBoolNil() *GomodelUpdateBuilder {
+// SetBoolNull 将字段更新为 Null
+func (b *GomodelUpdateBuilder) SetBoolNull() *GomodelUpdateBuilder {
 	b.set("`bool`", "`bool`=NULL", nil)
 	return b
 }

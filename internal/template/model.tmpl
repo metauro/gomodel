@@ -1,10 +1,18 @@
 package {{.Pkg}}
 
-import "time"
+import (
+  "time"
+  "github.com/volatiletech/null/v9"
+)
 
-var _ = time.Second
+
+var (
+  _ time.Time
+  _ null.Bool
+)
+
 
 type {{.TitleName}} struct {
-{{range .Fields}}  {{.TitleName}} {{.Type}} `{{.Tag}}`
+{{range .Fields}}  {{.TitleName}} {{.GoType}} `{{.Tag}}`
 {{end -}}
 }

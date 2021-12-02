@@ -3,6 +3,7 @@ package test
 import (
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/volatiletech/null/v9"
 	"strings"
 	"testing"
 )
@@ -34,18 +35,18 @@ func TestGomodelInsertBuilder(t *testing.T) {
 			sql, args := newGomodelInsertBuilder(nil).
 				Fields(GomodelFieldInt).
 				Values(&Gomodel{
-					Int: 1,
+					Int: null.NewInt(1, true),
 				}).
 				SQL()
 			So(sql, ShouldEqual, fmt.Sprintf("INSERT INTO `%s` (%s) VALUES (?)", GomodelTable, GomodelFieldInt))
 			So(args, ShouldHaveLength, 1)
-			So(args[0], ShouldEqual, 1)
+			So(args[0], ShouldResemble, null.NewInt(1, true))
 
 			sql, args = newGomodelInsertBuilder(nil).
 				Fields(GomodelFieldBool, GomodelFieldUint).
 				Values(&Gomodel{
-					Bool: false,
-					Uint: 1,
+					Bool: null.NewBool(false, false),
+					Uint: null.NewUint(1, true),
 				}).
 				SQL()
 			So(
@@ -54,8 +55,8 @@ func TestGomodelInsertBuilder(t *testing.T) {
 				fmt.Sprintf("INSERT INTO `%s` (%s,%s) VALUES (?,?)", GomodelTable, GomodelFieldBool, GomodelFieldUint),
 			)
 			So(args, ShouldHaveLength, 2)
-			So(args[0], ShouldEqual, false)
-			So(args[1], ShouldEqual, 1)
+			So(args[0], ShouldResemble, null.NewBool(false, false))
+			So(args[1], ShouldResemble, null.NewUint(1, true))
 		})
 	})
 }

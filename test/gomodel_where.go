@@ -149,12 +149,12 @@ func (b *GomodelWhereBuilder) SmallintNotIn(smallintList ...int16) *GomodelWhere
 	return b
 }
 
-func (b *GomodelWhereBuilder) SmallintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) SmallintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`smallint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) SmallintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) SmallintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`smallint` IS NOT NULL")
 	return b
 }
@@ -231,12 +231,12 @@ func (b *GomodelWhereBuilder) MediumintNotIn(mediumintList ...int32) *GomodelWhe
 	return b
 }
 
-func (b *GomodelWhereBuilder) MediumintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) MediumintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`mediumint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) MediumintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) MediumintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`mediumint` IS NOT NULL")
 	return b
 }
@@ -271,19 +271,19 @@ func (b *GomodelWhereBuilder) MediumintRaw(raw string, args ...interface{}) *Gom
 	b.args = append(b.args, args...)
 	return b
 }
-func (b *GomodelWhereBuilder) IntEQ(int int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntEQ(int int) *GomodelWhereBuilder {
 	b.sb.WriteString("`int`=?")
 	b.args = append(b.args, int)
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntNEQ(int int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntNEQ(int int) *GomodelWhereBuilder {
 	b.sb.WriteString("`int`<>?")
 	b.args = append(b.args, int)
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntIn(intList ...int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntIn(intList ...int) *GomodelWhereBuilder {
 	if len(intList) == 0 {
 		return b
 	}
@@ -298,7 +298,7 @@ func (b *GomodelWhereBuilder) IntIn(intList ...int32) *GomodelWhereBuilder {
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntNotIn(intList ...int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntNotIn(intList ...int) *GomodelWhereBuilder {
 	if len(intList) == 0 {
 		return b
 	}
@@ -313,35 +313,35 @@ func (b *GomodelWhereBuilder) IntNotIn(intList ...int32) *GomodelWhereBuilder {
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`int` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`int` IS NOT NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntGT(int int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntGT(int int) *GomodelWhereBuilder {
 	b.sb.WriteString("`int`>?")
 	b.args = append(b.args, int)
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntGTE(int int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntGTE(int int) *GomodelWhereBuilder {
 	b.sb.WriteString("`int`>=?")
 	b.args = append(b.args, int)
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntLT(int int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntLT(int int) *GomodelWhereBuilder {
 	b.sb.WriteString("`int`<?")
 	b.args = append(b.args, int)
 	return b
 }
 
-func (b *GomodelWhereBuilder) IntLTE(int int32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) IntLTE(int int) *GomodelWhereBuilder {
 	b.sb.WriteString("`int`<=?")
 	b.args = append(b.args, int)
 	return b
@@ -395,12 +395,12 @@ func (b *GomodelWhereBuilder) BigintNotIn(bigintList ...int64) *GomodelWhereBuil
 	return b
 }
 
-func (b *GomodelWhereBuilder) BigintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BigintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`bigint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) BigintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BigintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`bigint` IS NOT NULL")
 	return b
 }
@@ -477,12 +477,12 @@ func (b *GomodelWhereBuilder) FloatNotIn(floatList ...float32) *GomodelWhereBuil
 	return b
 }
 
-func (b *GomodelWhereBuilder) FloatIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) FloatIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`float` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) FloatIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) FloatIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`float` IS NOT NULL")
 	return b
 }
@@ -559,12 +559,12 @@ func (b *GomodelWhereBuilder) DoubleNotIn(doubleList ...float64) *GomodelWhereBu
 	return b
 }
 
-func (b *GomodelWhereBuilder) DoubleIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DoubleIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`double` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) DoubleIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DoubleIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`double` IS NOT NULL")
 	return b
 }
@@ -641,12 +641,12 @@ func (b *GomodelWhereBuilder) DecimalNotIn(decimalList ...float64) *GomodelWhere
 	return b
 }
 
-func (b *GomodelWhereBuilder) DecimalIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DecimalIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`decimal` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) DecimalIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DecimalIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`decimal` IS NOT NULL")
 	return b
 }
@@ -723,12 +723,12 @@ func (b *GomodelWhereBuilder) UtinyintNotIn(utinyintList ...uint8) *GomodelWhere
 	return b
 }
 
-func (b *GomodelWhereBuilder) UtinyintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UtinyintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`utinyint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UtinyintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UtinyintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`utinyint` IS NOT NULL")
 	return b
 }
@@ -805,12 +805,12 @@ func (b *GomodelWhereBuilder) UsmallintNotIn(usmallintList ...uint16) *GomodelWh
 	return b
 }
 
-func (b *GomodelWhereBuilder) UsmallintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UsmallintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`usmallint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UsmallintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UsmallintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`usmallint` IS NOT NULL")
 	return b
 }
@@ -887,12 +887,12 @@ func (b *GomodelWhereBuilder) UmediumintNotIn(umediumintList ...uint32) *Gomodel
 	return b
 }
 
-func (b *GomodelWhereBuilder) UmediumintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UmediumintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`umediumint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UmediumintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UmediumintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`umediumint` IS NOT NULL")
 	return b
 }
@@ -927,19 +927,19 @@ func (b *GomodelWhereBuilder) UmediumintRaw(raw string, args ...interface{}) *Go
 	b.args = append(b.args, args...)
 	return b
 }
-func (b *GomodelWhereBuilder) UintEQ(uint uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintEQ(uint uint) *GomodelWhereBuilder {
 	b.sb.WriteString("`uint`=?")
 	b.args = append(b.args, uint)
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintNEQ(uint uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintNEQ(uint uint) *GomodelWhereBuilder {
 	b.sb.WriteString("`uint`<>?")
 	b.args = append(b.args, uint)
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintIn(uintList ...uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintIn(uintList ...uint) *GomodelWhereBuilder {
 	if len(uintList) == 0 {
 		return b
 	}
@@ -954,7 +954,7 @@ func (b *GomodelWhereBuilder) UintIn(uintList ...uint32) *GomodelWhereBuilder {
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintNotIn(uintList ...uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintNotIn(uintList ...uint) *GomodelWhereBuilder {
 	if len(uintList) == 0 {
 		return b
 	}
@@ -969,35 +969,35 @@ func (b *GomodelWhereBuilder) UintNotIn(uintList ...uint32) *GomodelWhereBuilder
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`uint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`uint` IS NOT NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintGT(uint uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintGT(uint uint) *GomodelWhereBuilder {
 	b.sb.WriteString("`uint`>?")
 	b.args = append(b.args, uint)
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintGTE(uint uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintGTE(uint uint) *GomodelWhereBuilder {
 	b.sb.WriteString("`uint`>=?")
 	b.args = append(b.args, uint)
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintLT(uint uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintLT(uint uint) *GomodelWhereBuilder {
 	b.sb.WriteString("`uint`<?")
 	b.args = append(b.args, uint)
 	return b
 }
 
-func (b *GomodelWhereBuilder) UintLTE(uint uint32) *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UintLTE(uint uint) *GomodelWhereBuilder {
 	b.sb.WriteString("`uint`<=?")
 	b.args = append(b.args, uint)
 	return b
@@ -1051,12 +1051,12 @@ func (b *GomodelWhereBuilder) UbigintNotIn(ubigintList ...uint64) *GomodelWhereB
 	return b
 }
 
-func (b *GomodelWhereBuilder) UbigintIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UbigintIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`ubigint` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UbigintIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UbigintIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`ubigint` IS NOT NULL")
 	return b
 }
@@ -1133,12 +1133,12 @@ func (b *GomodelWhereBuilder) UfloatNotIn(ufloatList ...float32) *GomodelWhereBu
 	return b
 }
 
-func (b *GomodelWhereBuilder) UfloatIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UfloatIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`ufloat` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UfloatIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UfloatIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`ufloat` IS NOT NULL")
 	return b
 }
@@ -1215,12 +1215,12 @@ func (b *GomodelWhereBuilder) UdoubleNotIn(udoubleList ...float64) *GomodelWhere
 	return b
 }
 
-func (b *GomodelWhereBuilder) UdoubleIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UdoubleIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`udouble` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UdoubleIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UdoubleIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`udouble` IS NOT NULL")
 	return b
 }
@@ -1297,12 +1297,12 @@ func (b *GomodelWhereBuilder) UdecimalNotIn(udecimalList ...float64) *GomodelWhe
 	return b
 }
 
-func (b *GomodelWhereBuilder) UdecimalIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UdecimalIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`udecimal` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) UdecimalIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) UdecimalIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`udecimal` IS NOT NULL")
 	return b
 }
@@ -1379,12 +1379,12 @@ func (b *GomodelWhereBuilder) DateNotIn(dateList ...time.Time) *GomodelWhereBuil
 	return b
 }
 
-func (b *GomodelWhereBuilder) DateIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DateIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`date` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) DateIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DateIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`date` IS NOT NULL")
 	return b
 }
@@ -1461,12 +1461,12 @@ func (b *GomodelWhereBuilder) DatetimeNotIn(datetimeList ...time.Time) *GomodelW
 	return b
 }
 
-func (b *GomodelWhereBuilder) DatetimeIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DatetimeIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`datetime` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) DatetimeIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) DatetimeIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`datetime` IS NOT NULL")
 	return b
 }
@@ -1615,12 +1615,12 @@ func (b *GomodelWhereBuilder) TimeNotIn(timeList ...time.Time) *GomodelWhereBuil
 	return b
 }
 
-func (b *GomodelWhereBuilder) TimeIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TimeIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`time` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) TimeIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TimeIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`time` IS NOT NULL")
 	return b
 }
@@ -1697,12 +1697,12 @@ func (b *GomodelWhereBuilder) YearNotIn(yearList ...time.Time) *GomodelWhereBuil
 	return b
 }
 
-func (b *GomodelWhereBuilder) YearIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) YearIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`year` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) YearIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) YearIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`year` IS NOT NULL")
 	return b
 }
@@ -1779,12 +1779,12 @@ func (b *GomodelWhereBuilder) CharNotIn(charList ...string) *GomodelWhereBuilder
 	return b
 }
 
-func (b *GomodelWhereBuilder) CharIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) CharIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`char` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) CharIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) CharIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`char` IS NOT NULL")
 	return b
 }
@@ -1849,12 +1849,12 @@ func (b *GomodelWhereBuilder) VarcharNotIn(varcharList ...string) *GomodelWhereB
 	return b
 }
 
-func (b *GomodelWhereBuilder) VarcharIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) VarcharIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`varchar` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) VarcharIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) VarcharIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`varchar` IS NOT NULL")
 	return b
 }
@@ -1919,12 +1919,12 @@ func (b *GomodelWhereBuilder) BinaryNotIn(binaryList ...string) *GomodelWhereBui
 	return b
 }
 
-func (b *GomodelWhereBuilder) BinaryIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BinaryIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`binary` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) BinaryIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BinaryIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`binary` IS NOT NULL")
 	return b
 }
@@ -1989,12 +1989,12 @@ func (b *GomodelWhereBuilder) VarbinaryNotIn(varbinaryList ...string) *GomodelWh
 	return b
 }
 
-func (b *GomodelWhereBuilder) VarbinaryIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) VarbinaryIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`varbinary` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) VarbinaryIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) VarbinaryIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`varbinary` IS NOT NULL")
 	return b
 }
@@ -2059,12 +2059,12 @@ func (b *GomodelWhereBuilder) TinyblobNotIn(tinyblobList ...string) *GomodelWher
 	return b
 }
 
-func (b *GomodelWhereBuilder) TinyblobIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TinyblobIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`tinyblob` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) TinyblobIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TinyblobIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`tinyblob` IS NOT NULL")
 	return b
 }
@@ -2129,12 +2129,12 @@ func (b *GomodelWhereBuilder) TinytextNotIn(tinytextList ...string) *GomodelWher
 	return b
 }
 
-func (b *GomodelWhereBuilder) TinytextIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TinytextIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`tinytext` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) TinytextIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TinytextIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`tinytext` IS NOT NULL")
 	return b
 }
@@ -2199,12 +2199,12 @@ func (b *GomodelWhereBuilder) BlobNotIn(blobList ...string) *GomodelWhereBuilder
 	return b
 }
 
-func (b *GomodelWhereBuilder) BlobIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BlobIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`blob` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) BlobIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BlobIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`blob` IS NOT NULL")
 	return b
 }
@@ -2269,12 +2269,12 @@ func (b *GomodelWhereBuilder) TextNotIn(textList ...string) *GomodelWhereBuilder
 	return b
 }
 
-func (b *GomodelWhereBuilder) TextIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TextIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`text` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) TextIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TextIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`text` IS NOT NULL")
 	return b
 }
@@ -2339,12 +2339,12 @@ func (b *GomodelWhereBuilder) MediumblobNotIn(mediumblobList ...string) *Gomodel
 	return b
 }
 
-func (b *GomodelWhereBuilder) MediumblobIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) MediumblobIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`mediumblob` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) MediumblobIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) MediumblobIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`mediumblob` IS NOT NULL")
 	return b
 }
@@ -2409,12 +2409,12 @@ func (b *GomodelWhereBuilder) MediumtextNotIn(mediumtextList ...string) *Gomodel
 	return b
 }
 
-func (b *GomodelWhereBuilder) MediumtextIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) MediumtextIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`mediumtext` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) MediumtextIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) MediumtextIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`mediumtext` IS NOT NULL")
 	return b
 }
@@ -2479,12 +2479,12 @@ func (b *GomodelWhereBuilder) LongblobNotIn(longblobList ...string) *GomodelWher
 	return b
 }
 
-func (b *GomodelWhereBuilder) LongblobIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) LongblobIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`longblob` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) LongblobIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) LongblobIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`longblob` IS NOT NULL")
 	return b
 }
@@ -2549,12 +2549,12 @@ func (b *GomodelWhereBuilder) LongtextNotIn(longtextList ...string) *GomodelWher
 	return b
 }
 
-func (b *GomodelWhereBuilder) LongtextIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) LongtextIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`longtext` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) LongtextIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) LongtextIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`longtext` IS NOT NULL")
 	return b
 }
@@ -2619,12 +2619,12 @@ func (b *GomodelWhereBuilder) EnumNotIn(enumList ...string) *GomodelWhereBuilder
 	return b
 }
 
-func (b *GomodelWhereBuilder) EnumIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) EnumIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`enum` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) EnumIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) EnumIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`enum` IS NOT NULL")
 	return b
 }
@@ -2689,12 +2689,12 @@ func (b *GomodelWhereBuilder) SetNotIn(setList ...string) *GomodelWhereBuilder {
 	return b
 }
 
-func (b *GomodelWhereBuilder) SetIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) SetIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`set` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) SetIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) SetIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`set` IS NOT NULL")
 	return b
 }
@@ -2759,12 +2759,12 @@ func (b *GomodelWhereBuilder) JsonNotIn(jsonList ...string) *GomodelWhereBuilder
 	return b
 }
 
-func (b *GomodelWhereBuilder) JsonIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) JsonIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`json` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) JsonIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) JsonIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`json` IS NOT NULL")
 	return b
 }
@@ -2829,12 +2829,12 @@ func (b *GomodelWhereBuilder) TinyboolNotIn(tinyboolList ...bool) *GomodelWhereB
 	return b
 }
 
-func (b *GomodelWhereBuilder) TinyboolIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TinyboolIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`tinybool` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) TinyboolIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) TinyboolIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`tinybool` IS NOT NULL")
 	return b
 }
@@ -2887,12 +2887,12 @@ func (b *GomodelWhereBuilder) BoolNotIn(boolList ...bool) *GomodelWhereBuilder {
 	return b
 }
 
-func (b *GomodelWhereBuilder) BoolIsNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BoolIsNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`bool` IS NULL")
 	return b
 }
 
-func (b *GomodelWhereBuilder) BoolIsNotNil() *GomodelWhereBuilder {
+func (b *GomodelWhereBuilder) BoolIsNotNull() *GomodelWhereBuilder {
 	b.sb.WriteString("`bool` IS NOT NULL")
 	return b
 }

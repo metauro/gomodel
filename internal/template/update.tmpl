@@ -26,8 +26,22 @@ func new{{$updateBuilder}}(db *{{$db}}) *{{$updateBuilder}} {
 // Set 将数据更新为 {{$.CamelName}} 内的值,零值会被忽略
 func (b *{{$updateBuilder}}) Set({{$.CamelName}} *{{$.TitleName}}) *{{$updateBuilder}} {
   {{- range $i, $field := $.Fields}}
-  if {{if eq $field.Type "time.Time"}}!{{$.CamelName}}.{{$field.TitleName}}.IsZero(){{else}}{{$.CamelName}}.{{$field.TitleName}} != {{$field.ZeroValue}}{{end}} {
-    b.set("{{$field.TitleName}}", "{{$field.SQLName}}={{$.Placeholder}}", {{$.CamelName}}.{{$field.TitleName}})
+  if {{if $field.Nullable -}}
+    {{$.CamelName}}.{{$field.TitleName}}.IsValid()
+  {{- else if eq $field.GoRawType "time.Time" -}}
+    !{{$.CamelName}}.{{$field.TitleName}}.IsZero()
+  {{- else -}}
+    {{$.CamelName}}.{{$field.TitleName}} != {{$field.ZeroValue}}
+  {{- end -}}
+  {
+    b.set("{{$field.TitleName}}", "{{$field.SQLName}}={{$.Placeholder}}", {{$.CamelName}}.{{$field.TitleName}}
+{{- if $field.Nullable -}}
+  {{- if eq $field.GoRawType "time.Time" -}}
+    .Time
+  {{- else -}}
+    .{{$field.GoRawType | titleCase}}
+  {{- end -}}
+{{- end -}})
   }
   {{end}}
   return b
@@ -35,18 +49,18 @@ func (b *{{$updateBuilder}}) Set({{$.CamelName}} *{{$.TitleName}}) *{{$updateBui
 
 {{range $.Fields -}}
 // Set{{.TitleName}} 将字段更新为指定值
-func (b *{{$updateBuilder}}) Set{{.TitleName}}({{.CamelName}} {{.Type}}) *{{$updateBuilder}} {
+func (b *{{$updateBuilder}}) Set{{.TitleName}}({{.CamelName}} {{.GoRawType}}) *{{$updateBuilder}} {
   b.set("{{.SQLName}}", "{{.SQLName}}={{$.Placeholder}}", {{.CamelName}})
   return b
 }
 
-{{if eq .Type "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"}}
-func (b *{{$updateBuilder}}) Incr{{.TitleName}}(val {{.Type}}) *{{$updateBuilder}} {
+{{if eq .GoRawType "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"}}
+func (b *{{$updateBuilder}}) Incr{{.TitleName}}(val {{.GoRawType}}) *{{$updateBuilder}} {
   b.set("{{.SQLName}}", "{{.SQLName}}={{.SQLName}}+{{$.Placeholder}}", val)
   return b
 }
 
-func (b *{{$updateBuilder}}) Decr{{.TitleName}}(val {{.Type}}) *{{$updateBuilder}} {
+func (b *{{$updateBuilder}}) Decr{{.TitleName}}(val {{.GoRawType}}) *{{$updateBuilder}} {
   b.set("{{.SQLName}}", "{{.SQLName}}={{.SQLName}}-{{$.Placeholder}}", val)
   return b
 }
@@ -58,8 +72,8 @@ func (b *{{$updateBuilder}}) Set{{.TitleName}}Zero() *{{$updateBuilder}} {
 }
 
 {{if .Nullable}}
-// Set{{.TitleName}}Nil 将字段更新为 nil
-func (b *{{$updateBuilder}}) Set{{.TitleName}}Nil() *{{$updateBuilder}} {
+// Set{{.TitleName}}Null 将字段更新为 Null
+func (b *{{$updateBuilder}}) Set{{.TitleName}}Null() *{{$updateBuilder}} {
   b.set("{{.SQLName}}", "{{.SQLName}}=NULL", nil)
   return b
 }

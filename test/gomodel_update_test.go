@@ -29,7 +29,7 @@ func TestGomodelUpdateBuilder(t *testing.T) {
 				IncrInt(2).
 				DecrSmallint(3).
 				SetVarcharZero().
-				SetCharNil().
+				SetCharNull().
 				SetBigintRaw("=?+?", 4, 5).
 				SQL()
 			So(args, ShouldHaveLength, 6)

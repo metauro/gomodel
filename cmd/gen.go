@@ -34,7 +34,10 @@ type Field struct {
 	SnakeName string
 	SQLName   string
 	SQLType   string
-	Type      string
+	// GoType eg: string,null.String
+	GoType string
+	// GoRawType eg: string, int
+	GoRawType string
 	Tag       string
 	ZeroValue string
 	Nullable  bool
@@ -192,7 +195,7 @@ func init() {
 	CamelName - camel case field name, eg: testField
 	SnakeName - snake case field name, eg: test_field 
 	SQLName   - escaped field name, eg: "test_field"  
-	Type      - field golang type, string, int, time.Time etc.
+	GoType    - field golang type, string, int, time.Time etc.
 	SQLType   - field sql type, varchar(11), char(11), int(11) etc.
 	SQLTypeNoArgs - field sql type, no 
 	Unsigned -  true if field type is unsigned numeric   
@@ -247,7 +250,7 @@ func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, erro
 		"tinyint":   "int8",
 		"smallint":  "int16",
 		"mediumint": "int32",
-		"int":       "int32",
+		"int":       "int",
 		"bigint":    "int64",
 		"float":     "float32",
 		"double":    "float64",
@@ -276,7 +279,40 @@ func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, erro
 		"json":       "string",
 	}
 
-	// TODO: null 和 zeroValue  使用 https://github.com/guregu/null 处理
+	nullableTypeMap := map[string]string{
+		// numeric type
+		"tinyint":   "null.Int8",
+		"smallint":  "null.Int16",
+		"mediumint": "null.Int32",
+		"int":       "null.Int",
+		"bigint":    "null.Int64",
+		"float":     "null.Float32",
+		"double":    "null.Float64",
+		"decimal":   "null.Float64",
+		// date type
+		"date":      "null.Time",
+		"datetime":  "null.Time",
+		"timestamp": "null.Time",
+		"time":      "null.Time",
+		"year":      "null.Time",
+		// string type
+		"char":       "null.String",
+		"varchar":    "null.String",
+		"binary":     "null.String",
+		"varbinary":  "null.String",
+		"tinyblob":   "null.String",
+		"tinytext":   "null.String",
+		"blob":       "null.String",
+		"text":       "null.String",
+		"mediumblob": "null.String",
+		"mediumtext": "null.String",
+		"longblob":   "null.String",
+		"longtext":   "null.String",
+		"enum":       "null.String",
+		"set":        "null.String",
+		"json":       "null.String",
+	}
+
 	keywordMap := map[string]bool{
 		"break":       true,
 		"case":        true,
@@ -312,74 +348,70 @@ func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, erro
 
 	result := make([]*Field, 0)
 	for _, column := range columns {
-		// sql 类型,如 "tinyint(1)"
-		sqlType := strings.ToLower(column.Type)
-		// sql 类型,去掉括号内容的,如 "tinyint"
-		sqlTypeNoArgs := sqlType
-		typ := typeMap[sqlType]
-		zeroValue := ""
-		unsigned := strings.Contains(sqlType, "unsigned")
+		var goType string
+		var goRawType string
+		var zeroValue string
 
-		if bracketIdx := strings.Index(sqlType, "("); bracketIdx != -1 {
-			sqlTypeNoArgs = sqlType[0:bracketIdx]
+		if column.Type == "tinyint" && column.Len == 1 {
+			goType = "bool"
+		} else {
+			goType = typeMap[column.Type]
 		}
-
-		if spaceIdx := strings.Index(sqlTypeNoArgs, " "); spaceIdx != -1 {
-			sqlTypeNoArgs = sqlTypeNoArgs[0:spaceIdx]
-		}
-
-		if typ == "" {
-			if strings.HasPrefix(sqlType, "tinyint(1)") {
-				typ = "bool"
-			} else {
-				typ = typeMap[sqlTypeNoArgs]
-			}
-
-			if typ == "" {
-				typ = "interface{}"
-			}
-		}
-
-		fmt.Printf("sqltype: %v, %v, typ: %v \n", sqlType, sqlTypeNoArgs, typ)
 
 		// 处理无符号类型
-		if strings.HasPrefix(typ, "int") && unsigned {
-			typ = "u" + typ
+		if column.Unsigned && !strings.HasPrefix(goType, "float") {
+			goType = "u" + goType
 		}
 
-		if typ == "time.Time" && c.TimeString {
-			typ = "string"
+		if goType == "time.Time" && c.TimeString {
+			goType = "string"
 		}
 
-		if typ == "string" {
+		if goType == "string" {
 			zeroValue = `""`
-		} else if typ == "bool" {
+		} else if goType == "bool" {
 			zeroValue = "false"
-		} else if typ == "time.Time" {
+		} else if goType == "time.Time" {
 			zeroValue = "time.Time{}"
-		} else if strings.HasPrefix(typ, "int") ||
-			strings.HasPrefix(typ, "uint") ||
-			strings.HasPrefix(typ, "float") {
+		} else if strings.HasPrefix(goType, "int") ||
+			strings.HasPrefix(goType, "uint") ||
+			strings.HasPrefix(goType, "float") {
 			zeroValue = "0"
-		} else {
-			zeroValue = "nil"
+		}
+		goRawType = goType
+
+		if column.Nullable {
+			if column.Type == "tinyint" && column.Len == 1 {
+				goType = "null.Bool"
+			} else {
+				goType = nullableTypeMap[column.Type]
+			}
+
+			if column.Unsigned && !strings.HasPrefix(goType, "null.Float") {
+				goType = "null.U" + strings.ToLower(goType[5:])
+			}
+
+			if goType == "null.Time" && c.TimeString {
+				goType = "null.String"
+			}
 		}
 
-		name := column.Field
+		fieldName := column.Field
 		// sql 字段名与 go 关键字冲突时,添加前缀
-		if isKeyword := keywordMap[name]; isKeyword {
-			name = "k_" + name
+		if isKeyword := keywordMap[fieldName]; isKeyword {
+			fieldName = "k_" + fieldName
 		}
 
 		field := &Field{
 			TitleName: strcase.ToCamel(column.Field),
-			CamelName: strcase.ToLowerCamel(name),
+			CamelName: strcase.ToLowerCamel(fieldName),
 			SnakeName: column.Field,
 			SQLName:   fmt.Sprintf("`%s`", column.Field),
-			Type:      typ,
-			SQLType:   sqlType,
+			GoType:    goType,
+			GoRawType: goRawType,
+			SQLType:   column.Type,
 			ZeroValue: zeroValue,
-			Nullable:  column.Null == "YES",
+			Nullable:  column.Nullable,
 		}
 		if c.Tag != "" {
 			var tag bytes.Buffer

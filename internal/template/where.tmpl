@@ -40,19 +40,19 @@ func (b *{{$whereBuilder}}) ConditionGroup(fn func(b *{{$whereBuilder}})) *{{$wh
 }
 
 {{range $.Fields -}}
-func (b *{{$whereBuilder}}) {{.TitleName}}EQ({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}EQ({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
 	b.sb.WriteString("{{.SQLName}}={{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
 	return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}NEQ({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}NEQ({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
 	b.sb.WriteString("{{.SQLName}}<>{{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
 	return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}In({{.CamelName}}List ...{{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}In({{.CamelName}}List ...{{.GoRawType}}) *{{$whereBuilder}} {
 	if len({{.CamelName}}List) == 0 {
 	  return b
 	}
@@ -67,7 +67,7 @@ func (b *{{$whereBuilder}}) {{.TitleName}}In({{.CamelName}}List ...{{.Type}}) *{
   return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}NotIn({{.CamelName}}List ...{{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}NotIn({{.CamelName}}List ...{{.GoRawType}}) *{{$whereBuilder}} {
 	if len({{.CamelName}}List) == 0 {
 	  return b
 	}
@@ -83,52 +83,52 @@ func (b *{{$whereBuilder}}) {{.TitleName}}NotIn({{.CamelName}}List ...{{.Type}})
 }
 
 {{if .Nullable}}
-func (b *{{$whereBuilder}}) {{.TitleName}}IsNil() *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}IsNull() *{{$whereBuilder}} {
 	b.sb.WriteString("{{.SQLName}} IS NULL")
 	return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}IsNotNil() *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}IsNotNull() *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}} IS NOT NULL")
   return b
 }
 {{end}}
 
-{{if eq .Type "string"}}
-func (b *{{$whereBuilder}}) {{.TitleName}}Like({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+{{if eq .GoRawType "string"}}
+func (b *{{$whereBuilder}}) {{.TitleName}}Like({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}} LIKE {{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
   return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}NotLike({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}NotLike({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}} NOT LIKE {{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
   return b
 }
 {{end -}}
 
-{{if eq .Type "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"
+{{if eq .GoRawType "int" "uint" "int8" "int16" "int32" "int64" "uint8" "uint16" "uint32" "uint64" "float32" "float64"
 "time.Time"}}
-func (b *{{$whereBuilder}}) {{.TitleName}}GT({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}GT({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}}>{{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
   return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}GTE({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}GTE({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}}>={{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
   return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}LT({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}LT({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}}<{{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
   return b
 }
 
-func (b *{{$whereBuilder}}) {{.TitleName}}LTE({{.CamelName}} {{.Type}}) *{{$whereBuilder}} {
+func (b *{{$whereBuilder}}) {{.TitleName}}LTE({{.CamelName}} {{.GoRawType}}) *{{$whereBuilder}} {
   b.sb.WriteString("{{.SQLName}}<={{$.Placeholder}}")
   b.args = append(b.args, {{.CamelName}})
   return b
