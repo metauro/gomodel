@@ -1,4 +1,4 @@
-package {{(index . 0).Pkg}}
+package test
 
 import (
 	"database/sql"
@@ -14,7 +14,7 @@ const (
 )
 
 type set struct {
-  sql string
+	sql string
 	arg interface{}
 }
 
@@ -27,5 +27,5 @@ func defaultErrorHandler(err error) error {
 }
 
 type _Builder interface {
-  SQL() (string, []interface{})
+	SQL() (string, []interface{})
 }

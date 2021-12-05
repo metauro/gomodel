@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/iancoleman/strcase"
 	"io"
+	"os"
 	"strings"
 	"text/template"
 )
@@ -18,6 +19,10 @@ var (
 	TemplateDBAll string
 	//go:embed delete.tmpl
 	TemplateDelete string
+	//go:embed event.tmpl
+	TemplateEvent string
+	//go:embed hook.tmpl
+	TemplateHook string
 	//go:embed insert.tmpl
 	TemplateInsert string
 	//go:embed model.tmpl
@@ -30,8 +35,8 @@ var (
 	TemplateSelect string
 	//go:embed update.tmpl
 	TemplateUpdate string
-	//go:embed variable.tmpl
-	TemplateVariable string
+	//go:embed predefine.tmpl
+	TemplatePredefine string
 	//go:embed where.tmpl
 	TemplateWhere string
 )
@@ -63,4 +68,12 @@ func Execute(text string, wr io.Writer, data interface{}) error {
 		return err
 	}
 	return tmpl.Execute(wr, data)
+}
+
+func WriteFile(text string, filepath string, data interface{}) error {
+	file, err := os.OpenFile(filepath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	return Execute(text, file, data)
 }

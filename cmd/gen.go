@@ -9,7 +9,6 @@ import (
 	"github.com/metauro/gomodel/internal/msql"
 	"github.com/metauro/gomodel/internal/template"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/exec"
@@ -18,14 +17,14 @@ import (
 )
 
 type Model struct {
-	Pkg              string
-	TitleName        string
-	CamelName        string
-	SnakeName        string
-	SQLName          string
-	Placeholder      string
-	SoftDeleteColumn string
-	Fields           []*Field
+	Pkg             string
+	TitleName       string
+	CamelName       string
+	SnakeName       string
+	SQLName         string
+	Placeholder     string
+	SoftDeleteField *Field
+	Fields          []*Field
 }
 
 type Field struct {
@@ -43,116 +42,107 @@ type Field struct {
 	Nullable  bool
 }
 
-type GenConfig struct {
+type GenOptions struct {
 	DriveName        string
 	Dsn              string
-	Prefix           string
-	AppendPrefix     bool
-	SelectAllTable   bool
 	Output           string
 	SoftDeleteColumn string
 	Tag              string
 	TimeString       bool
+	Tables           []string
 }
+
+var genOpts = &GenOptions{}
 
 // genCmd represents the gen command
 var genCmd = &cobra.Command{
 	Use:   "gen",
 	Short: "Generate code from tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := &GenConfig{
-			DriveName:        viper.GetString("drive-name"),
-			Dsn:              viper.GetString("dsn"),
-			Prefix:           viper.GetString("prefix"),
-			AppendPrefix:     viper.GetBool("append-prefix"),
-			SelectAllTable:   viper.GetBool("all"),
-			Output:           viper.GetString("output"),
-			SoftDeleteColumn: viper.GetString("soft-delete-column"),
-			Tag:              viper.GetString("tag"),
-			TimeString:       viper.GetBool("time-string"),
-		}
-		pkg := strcase.ToSnake(filepath.Base(c.Output))
-
-		db, err := msql.Open(c.DriveName, c.Dsn)
+		pkg := strcase.ToSnake(filepath.Base(genOpts.Output))
+		db, err := msql.Open(genOpts.DriveName, genOpts.Dsn)
 		if err != nil {
 			panic(err)
 		}
 
-		tables, err := getTables(db, c)
-		if err != nil {
-			panic(err)
+		if len(genOpts.Tables) == 0 {
+			genOpts.Tables, err = getTables(db)
+			if err != nil {
+				panic(err)
+			}
 		}
 
-		if len(tables) == 0 {
+		if len(genOpts.Tables) == 0 {
 			log.Printf("no tables need to generate\n")
 			return
 		}
 
-		log.Printf("start generate tables: %v\n", tables)
+		log.Printf("start generate tables: %v\n", genOpts.Tables)
 
 		wd, err := os.Getwd()
 		if err != nil {
 			panic(err)
 		}
+		getPath := func(path string) string {
+			return filepath.Join(wd, genOpts.Output, path)
+		}
 
-		var templateMap = map[string]string{
+		templateMap := map[string]string{
 			"constants": template.TemplateConstants,
 			"db":        template.TemplateDB,
 			"delete":    template.TemplateDelete,
+			"event":     template.TemplateEvent,
 			"insert":    template.TemplateInsert,
 			"model":     template.TemplateModel,
 			"order":     template.TemplateOrder,
-			"runtime":   template.TemplateRuntime,
 			"select":    template.TemplateSelect,
 			"update":    template.TemplateUpdate,
 			"where":     template.TemplateWhere,
 		}
+		genOnceTemplateMap := map[string]string{
+			"db":      template.TemplateDBAll,
+			"runtime": template.TemplateRuntime,
+			"hook":    template.TemplateHook,
+		}
 
-		models := make([]*Model, 0, len(tables))
+		models := make([]*Model, 0, len(genOpts.Tables))
+		if err := os.MkdirAll(getPath(""), 0755); err != nil {
+			panic(err)
+		}
 
-		for _, table := range tables {
+		for _, table := range genOpts.Tables {
 			name := table
-			if !c.AppendPrefix && c.Prefix != "" && strings.HasPrefix(name, c.Prefix) {
-				name = name[len(c.Prefix):]
-			}
-			if err := os.MkdirAll(c.Output, 0755); err != nil {
-				panic(err)
-			}
-
 			name = strcase.ToCamel(name)
-			fields, err := getFieldsFromTable(db, table, c)
+			fields, err := getFieldsFromTable(db, table)
 			if err != nil {
 				panic(err)
 			}
-			softDeleteColumn := ""
+			var softDeleteField *Field
 			for _, field := range fields {
-				if field.SnakeName == c.SoftDeleteColumn {
-					softDeleteColumn = field.SQLName
+				if field.SnakeName == genOpts.SoftDeleteColumn {
+					softDeleteField = field
 				}
 			}
 
 			model := &Model{
-				Pkg:              pkg,
-				CamelName:        strcase.ToLowerCamel(name),
-				TitleName:        strcase.ToCamel(name),
-				SnakeName:        table,
-				SQLName:          fmt.Sprintf("`%s`", table),
-				Fields:           fields,
-				Placeholder:      "?",
-				SoftDeleteColumn: softDeleteColumn,
+				Pkg:             pkg,
+				CamelName:       strcase.ToLowerCamel(name),
+				TitleName:       strcase.ToCamel(name),
+				SnakeName:       table,
+				SQLName:         fmt.Sprintf("`%s`", table),
+				Fields:          fields,
+				Placeholder:     "?",
+				SoftDeleteField: softDeleteField,
 			}
 			models = append(models, model)
 
 			for name, content := range templateMap {
 				fmt.Printf("gen %v template\n", name)
-				file, err := os.OpenFile(
-					filepath.Join(wd, c.Output, fmt.Sprintf("%s_%s.go", model.SnakeName, name)),
-					os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm,
+				err := template.WriteFile(
+					template.TemplatePredefine+content,
+					getPath(fmt.Sprintf("%s_%s.go", model.SnakeName, name)),
+					model,
 				)
-				if err != nil {
-					panic(err)
-				}
-				err = template.Execute(template.TemplateVariable+content, file, model)
 				if err != nil {
 					panic(err)
 				}
@@ -160,13 +150,16 @@ var genCmd = &cobra.Command{
 			log.Printf("generate %s success\n", table)
 		}
 
-		file, err := os.OpenFile(
-			filepath.Join(wd, c.Output, "db.go"),
-			os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm,
-		)
-		err = template.Execute(template.TemplateDBAll, file, models)
-		if err != nil {
-			panic(err)
+		for name, content := range genOnceTemplateMap {
+			fmt.Printf("gen %v template\n", name)
+			err := template.WriteFile(
+				content,
+				getPath(fmt.Sprintf("%s.go", name)),
+				models,
+			)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		log.Println("start format code")
@@ -183,68 +176,55 @@ var genCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(genCmd)
-	genCmd.Flags().StringP("prefix", "p", "", "Select the table that contains the prefix")
-	genCmd.Flags().Bool("append-prefix", false, "Append prefix to struct name (default false)")
-	genCmd.Flags().BoolP("all", "a", false, "Select all table to generate")
-	genCmd.Flags().StringP("output", "o", "model", "Output folder")
-	genCmd.Flags().StringP("soft-delete-column", "d", "", "Enable soft deletion by updated column timestamp, "+
-		"the column type should be one of DATE, DATETIME, TIMESTAMP")
-	genCmd.Flags().StringP("tag", "t", `json:"{{.SnakeName}}" db:"{{.SnakeName}}"`,
+	genCmd.Flags().StringVarP(&genOpts.Output, "output", "o", "model", "Output folder")
+	genCmd.Flags().StringVarP(
+		&genOpts.SoftDeleteColumn,
+		"soft-delete-column",
+		"d",
+		"",
+		"Enable soft deletion by updated column timestamp, the column type should be one of DATE, DATETIME, TIMESTAMP",
+	)
+	genCmd.Flags().StringVarP(
+		&genOpts.Tag,
+		"tag",
+		"t",
+		`json:"{{.SnakeName}}" db:"{{.SnakeName}}"`,
 		`Struct field tag template, Available Tags: 
-	TitleName - title case field name, eg: TestField
-	CamelName - camel case field name, eg: testField
-	SnakeName - snake case field name, eg: test_field 
-	SQLName   - escaped field name, eg: "test_field"  
-	GoType    - field golang type, string, int, time.Time etc.
-	SQLType   - field sql type, varchar(11), char(11), int(11) etc.
-	SQLTypeNoArgs - field sql type, no 
-	Unsigned -  true if field type is unsigned numeric   
-	ZeroValue - field golang zero value
-`)
-	genCmd.Flags().Bool("time-string", false, "Use string instead time.Time")
-	genCmd.Flags().String("dsn", "", "eg: root:root@(localhost:3306)/test?parseTime=true")
-	genCmd.Flags().String("drive-name", "mysql", "eg: mysql,postgres")
-	cobra.CheckErr(viper.BindPFlags(genCmd.Flags()))
+TitleName - title case field name, eg: TestField
+CamelName - camel case field name, eg: testField
+SnakeName - snake case field name, eg: test_field 
+SQLName   - escaped field name, eg: "test_field"  
+GoType    - field golang type, string, int, time.Time ...
+SQLType   - field sql type, varchar, char, int ....
+Len 	  - field sql type len 
+Unsigned  -  true if field type is unsigned numeric   
+ZeroValue - field golang zero value
+`,
+	)
+	genCmd.Flags().BoolVar(&genOpts.TimeString, "time-string", false, "Use string instead time.Time")
+	genCmd.Flags().StringVar(&genOpts.Dsn, "dsn", "", "eg: root:root@(localhost:3306)/dev")
+	genCmd.Flags().StringVar(&genOpts.DriveName, "drive-name", "mysql", "eg: mysql,postgres")
+	genCmd.Flags().StringSliceVar(&genOpts.Tables, "table", nil, "eg: table_name")
 }
 
-func getTables(db *msql.DB, c *GenConfig) ([]string, error) {
+func getTables(db *msql.DB) ([]string, error) {
 	tables, err := db.GetTables()
 	if err != nil {
 		return nil, err
 	}
 
-	// 生成全部表
-	if c.SelectAllTable {
-		return tables, nil
+	prompt := &survey.MultiSelect{
+		Message:  "please select what tables you need to generate",
+		Options:  tables,
+		PageSize: 10,
 	}
 
-	// 如果没有指定前缀,则用户手动选择要生成的表
-	if c.Prefix == "" {
-		prompt := &survey.MultiSelect{
-			Message:  "please select what tables you need to generate",
-			Options:  tables,
-			PageSize: 10,
-		}
-
-		tables = make([]string, 0)
-		_ = survey.AskOne(prompt, &tables, survey.WithPageSize(10))
-		return tables, nil
-	}
-
-	// 按前缀筛选
-	result := make([]string, 0)
-	for _, table := range tables {
-		if !strings.HasPrefix(table, c.Prefix) {
-			continue
-		}
-
-		result = append(result, table)
-	}
-
-	return result, nil
+	tables = make([]string, 0)
+	_ = survey.AskOne(prompt, &tables, survey.WithPageSize(10))
+	return tables, nil
 }
 
-func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, error) {
+func getFieldsFromTable(db *msql.DB, table string) ([]*Field, error) {
 	typeMap := map[string]string{
 		// numeric type
 		"tinyint":   "int8",
@@ -363,7 +343,7 @@ func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, erro
 			goType = "u" + goType
 		}
 
-		if goType == "time.Time" && c.TimeString {
+		if goType == "time.Time" && genOpts.TimeString {
 			goType = "string"
 		}
 
@@ -391,7 +371,7 @@ func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, erro
 				goType = "null.U" + strings.ToLower(goType[5:])
 			}
 
-			if goType == "null.Time" && c.TimeString {
+			if goType == "null.Time" && genOpts.TimeString {
 				goType = "null.String"
 			}
 		}
@@ -413,9 +393,9 @@ func getFieldsFromTable(db *msql.DB, table string, c *GenConfig) ([]*Field, erro
 			ZeroValue: zeroValue,
 			Nullable:  column.Nullable,
 		}
-		if c.Tag != "" {
+		if genOpts.Tag != "" {
 			var tag bytes.Buffer
-			err := template.Execute(c.Tag, &tag, field)
+			err := template.Execute(genOpts.Tag, &tag, field)
 			if err != nil {
 				return nil, err
 			}

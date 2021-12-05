@@ -1,7 +1,6 @@
 package test
 
 import (
-	"context"
 	"fmt"
 	. "github.com/smartystreets/goconvey/convey"
 	"strings"
@@ -16,8 +15,8 @@ func TestGomodelSelectBuilder(t *testing.T) {
 			So(args, ShouldHaveLength, 0)
 		})
 
-		Convey("Should option work fine", func() {
-			builder := newGomodelSelectBuilder(db.Gomodel).
+		Convey("Should build correct statement with options", func() {
+			sql, args := newGomodelSelectBuilder(nil).
 				Distinct(true).
 				Fields(GomodelFieldInt).
 				Where(func(b *GomodelWhereBuilder) {
@@ -27,8 +26,8 @@ func TestGomodelSelectBuilder(t *testing.T) {
 					b.IntDESC()
 				}).
 				Limit(2).
-				Offset(3)
-			sql, args := builder.SQL()
+				Offset(3).
+				SQL()
 			So(
 				sql,
 				ShouldEqual,
@@ -44,10 +43,6 @@ func TestGomodelSelectBuilder(t *testing.T) {
 			So(args[0], ShouldEqual, 1)
 			So(args[1], ShouldEqual, 2)
 			So(args[2], ShouldEqual, 3)
-
-			list, err := builder.List(context.Background())
-			So(err, ShouldBeNil)
-			So(list, ShouldHaveLength, 0)
 		})
 
 		Convey("Should omit fields", func() {

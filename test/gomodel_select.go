@@ -157,125 +157,104 @@ func (b *GomodelSelectBuilder) Get(ctx context.Context) (*Gomodel, error) {
 
 // List 获取多条数据
 func (b *GomodelSelectBuilder) List(ctx context.Context) ([]*Gomodel, error) {
-	sql, args := b.SQL()
-	info := &queryInfo{
-		ctx:    ctx,
-		table:  b.table,
-		op:     OpSelect,
-		query:  sql,
-		fields: b.fields,
-		args:   args,
-	}
-
-	err := b.db.runBeforeHooks(info)
-	if err != nil {
-		return nil, err
-	}
-	if info.modified {
-		b.fields = info.fields
-		b.table = info.table
-		ctx = info.ctx
-		sql, _ = b.SQL()
-		args = info.args
-	}
-
-	rows, err := b.db.ext.QueryxContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-
 	res := make([]*Gomodel, 0)
-	scanners := make([]interface{}, len(b.fields))
-	for rows.Next() {
-		m := &Gomodel{}
-		for i, field := range b.fields {
-			switch field {
-			case "`tinyint`":
-				scanners[i] = &m.Tinyint
-			case "`smallint`":
-				scanners[i] = &m.Smallint
-			case "`mediumint`":
-				scanners[i] = &m.Mediumint
-			case "`int`":
-				scanners[i] = &m.Int
-			case "`bigint`":
-				scanners[i] = &m.Bigint
-			case "`float`":
-				scanners[i] = &m.Float
-			case "`double`":
-				scanners[i] = &m.Double
-			case "`decimal`":
-				scanners[i] = &m.Decimal
-			case "`utinyint`":
-				scanners[i] = &m.Utinyint
-			case "`usmallint`":
-				scanners[i] = &m.Usmallint
-			case "`umediumint`":
-				scanners[i] = &m.Umediumint
-			case "`uint`":
-				scanners[i] = &m.Uint
-			case "`ubigint`":
-				scanners[i] = &m.Ubigint
-			case "`ufloat`":
-				scanners[i] = &m.Ufloat
-			case "`udouble`":
-				scanners[i] = &m.Udouble
-			case "`udecimal`":
-				scanners[i] = &m.Udecimal
-			case "`date`":
-				scanners[i] = &m.Date
-			case "`datetime`":
-				scanners[i] = &m.Datetime
-			case "`timestamp`":
-				scanners[i] = &m.Timestamp
-			case "`time`":
-				scanners[i] = &m.Time
-			case "`year`":
-				scanners[i] = &m.Year
-			case "`char`":
-				scanners[i] = &m.Char
-			case "`varchar`":
-				scanners[i] = &m.Varchar
-			case "`binary`":
-				scanners[i] = &m.Binary
-			case "`varbinary`":
-				scanners[i] = &m.Varbinary
-			case "`tinyblob`":
-				scanners[i] = &m.Tinyblob
-			case "`tinytext`":
-				scanners[i] = &m.Tinytext
-			case "`blob`":
-				scanners[i] = &m.Blob
-			case "`text`":
-				scanners[i] = &m.Text
-			case "`mediumblob`":
-				scanners[i] = &m.Mediumblob
-			case "`mediumtext`":
-				scanners[i] = &m.Mediumtext
-			case "`longblob`":
-				scanners[i] = &m.Longblob
-			case "`longtext`":
-				scanners[i] = &m.Longtext
-			case "`enum`":
-				scanners[i] = &m.Enum
-			case "`set`":
-				scanners[i] = &m.Set
-			case "`json`":
-				scanners[i] = &m.Json
-			case "`tinybool`":
-				scanners[i] = &m.Tinybool
-			case "`bool`":
-				scanners[i] = &m.Bool
-			}
-		}
-		if err := rows.Scan(scanners...); err != nil {
+	e := newGomodelSelectEvent(ctx, b)
+	return res, b.db.exec(e, func(ctx context.Context, sql string, args ...interface{}) (interface{}, error) {
+		rows, err := b.db.ext.QueryxContext(ctx, sql, args...)
+		if err != nil {
 			return nil, err
 		}
-		res = append(res, m)
-	}
 
-	info.value = res
-	return res, b.db.runAfterHooks(info)
+		scanners := make([]interface{}, len(b.fields))
+		for rows.Next() {
+			m := &Gomodel{}
+			for i, field := range b.fields {
+				switch field {
+				case "`tinyint`":
+					scanners[i] = &m.Tinyint
+				case "`smallint`":
+					scanners[i] = &m.Smallint
+				case "`mediumint`":
+					scanners[i] = &m.Mediumint
+				case "`int`":
+					scanners[i] = &m.Int
+				case "`bigint`":
+					scanners[i] = &m.Bigint
+				case "`float`":
+					scanners[i] = &m.Float
+				case "`double`":
+					scanners[i] = &m.Double
+				case "`decimal`":
+					scanners[i] = &m.Decimal
+				case "`utinyint`":
+					scanners[i] = &m.Utinyint
+				case "`usmallint`":
+					scanners[i] = &m.Usmallint
+				case "`umediumint`":
+					scanners[i] = &m.Umediumint
+				case "`uint`":
+					scanners[i] = &m.Uint
+				case "`ubigint`":
+					scanners[i] = &m.Ubigint
+				case "`ufloat`":
+					scanners[i] = &m.Ufloat
+				case "`udouble`":
+					scanners[i] = &m.Udouble
+				case "`udecimal`":
+					scanners[i] = &m.Udecimal
+				case "`date`":
+					scanners[i] = &m.Date
+				case "`datetime`":
+					scanners[i] = &m.Datetime
+				case "`timestamp`":
+					scanners[i] = &m.Timestamp
+				case "`time`":
+					scanners[i] = &m.Time
+				case "`year`":
+					scanners[i] = &m.Year
+				case "`char`":
+					scanners[i] = &m.Char
+				case "`varchar`":
+					scanners[i] = &m.Varchar
+				case "`binary`":
+					scanners[i] = &m.Binary
+				case "`varbinary`":
+					scanners[i] = &m.Varbinary
+				case "`tinyblob`":
+					scanners[i] = &m.Tinyblob
+				case "`tinytext`":
+					scanners[i] = &m.Tinytext
+				case "`blob`":
+					scanners[i] = &m.Blob
+				case "`text`":
+					scanners[i] = &m.Text
+				case "`mediumblob`":
+					scanners[i] = &m.Mediumblob
+				case "`mediumtext`":
+					scanners[i] = &m.Mediumtext
+				case "`longblob`":
+					scanners[i] = &m.Longblob
+				case "`longtext`":
+					scanners[i] = &m.Longtext
+				case "`enum`":
+					scanners[i] = &m.Enum
+				case "`set`":
+					scanners[i] = &m.Set
+				case "`json`":
+					scanners[i] = &m.Json
+				case "`tinybool`":
+					scanners[i] = &m.Tinybool
+				case "`bool`":
+					scanners[i] = &m.Bool
+				}
+			}
+			if err := rows.Scan(scanners...); err != nil {
+				return nil, err
+			}
+			res = append(res, m)
+		}
+		return res, nil
+	})
 }
 
 func (b *GomodelSelectBuilder) Count(ctx context.Context) (int64, error) {
@@ -283,41 +262,23 @@ func (b *GomodelSelectBuilder) Count(ctx context.Context) (int64, error) {
 	defer func() {
 		b.fields = originFields
 	}()
-
 	b.Fields("COUNT(1) AS `count`")
-	sql, args := b.SQL()
-
-	info := &queryInfo{
-		ctx:   ctx,
-		table: b.table,
-		op:    OpSelect,
-		query: sql,
-		args:  args,
-	}
-	err := b.db.runBeforeHooks(info)
-	if err != nil {
-		return 0, err
-	}
-	ctx = info.ctx
-	if info.modified {
-		b.table = info.table
-		sql, _ = b.SQL()
-		args = info.args
-	}
-
-	row := b.db.ext.QueryRowxContext(ctx, sql, args...)
-	if row.Err() != nil {
-		return 0, row.Err()
-	}
 
 	var count int64
-	err = row.Scan(&count)
-	if err != nil {
-		return 0, err
-	}
+	e := newGomodelSelectEvent(ctx, b)
+	return count, b.db.exec(e, func(ctx context.Context, sql string, args ...interface{}) (interface{}, error) {
+		row := b.db.ext.QueryRowxContext(ctx, sql, args...)
+		if row.Err() != nil {
+			return 0, row.Err()
+		}
 
-	info.value = count
-	return count, b.db.runAfterHooks(info)
+		err := row.Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+
+		return count, nil
+	})
 }
 
 func (b *GomodelSelectBuilder) Page(ctx context.Context, page, pageSize int) ([]*Gomodel, int64, error) {

@@ -8,7 +8,19 @@ import (
 
 func TestGomodelWhereBuilder(t *testing.T) {
 	Convey("WhereBuilder", t, func() {
-		Convey("Should build correct statement", func() {
+		Convey("Should build correct statement on call once", func() {
+			sql, args := newGomodelWhereBuilder().
+				TinyintEQ(1).
+				sql()
+			So(
+				sql,
+				ShouldEqual,
+				fmt.Sprintf("WHERE %s=?", GomodelFieldTinyint),
+			)
+			So(args, ShouldHaveLength, 1)
+		})
+
+		Convey("Should build correct statement on call more than once", func() {
 			sql, args := newGomodelWhereBuilder().
 				TinyintEQ(1).
 				And().

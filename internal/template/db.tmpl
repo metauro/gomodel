@@ -1,17 +1,20 @@
 package {{.Pkg}}
 
 import (
+  "context"
   "github.com/jmoiron/sqlx"
 )
 
 type {{$db}} struct {
   ext sqlx.ExtContext
   hooks []Hook
+  handleError ErrorHandler
 }
 
 func New{{$db}}(db sqlx.ExtContext) *{{$db}} {
   return &{{$db}}{
     ext: db,
+    handleError: defaultErrorHandler,
   }
 }
 
@@ -37,22 +40,33 @@ func (db *{{$db}}) Use(hooks ...Hook) {
   }
 }
 
-func (db *{{$db}}) runBeforeHooks(info *queryInfo) error {
-  for _, hook := range db.hooks {
-      err := hook.Before(info)
-      if err != nil {
-        return err
-      }
-  }
-  return nil
+func (db *{{$db}}) SetErrorHandler(handler ErrorHandler) {
+  db.handleError = handler
 }
 
-func (db *{{$db}}) runAfterHooks(info *queryInfo) error {
+func (db *{{$db}}) exec(
+  e event,
+  execute func (ctx context.Context, sql string, args ...interface{}) (interface{}, error),
+) (error) {
   for _, hook := range db.hooks {
-      err := hook.After(info)
-      if err != nil {
-        return err
-      }
+    err := hook.Before(e)
+    if err != nil {
+      return err
+    }
   }
+
+	value, err := execute(e.Context(), e.SQL(), e.Args()...)
+  if err != nil {
+    return db.handleError(err)
+  }
+
+  e.SetValue(value)
+  for _, hook := range db.hooks {
+    err := hook.After(e)
+    if err != nil {
+      return err
+    }
+  }
+
   return nil
 }

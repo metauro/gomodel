@@ -158,35 +158,14 @@ func (b *GomodelInsertBuilder) SQL() (string, []interface{}) {
 }
 
 func (b *GomodelInsertBuilder) Exec(ctx context.Context) (int64, error) {
-	sql, args := b.SQL()
-	info := &queryInfo{
-		ctx:   ctx,
-		table: b.table,
-		op:    OpInsert,
-		query: sql,
-		args:  args,
-	}
-	err := b.db.runBeforeHooks(info)
-	if err != nil {
-		return 0, err
-	}
-	ctx = info.ctx
-
-	if info.modified {
-		b.table = info.table
-		sql, _ = b.SQL()
-		args = info.args
-	}
-
-	res, err := b.db.ext.ExecContext(ctx, sql, args...)
-	if err != nil {
-		return 0, err
-	}
-	id, err := res.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	info.value = id
-	return id, b.db.runAfterHooks(info)
+	var id int64
+	e := newGomodelInsertEvent(ctx, b)
+	return id, b.db.exec(e, func(ctx context.Context, sql string, args ...interface{}) (interface{}, error) {
+		res, err := b.db.ext.ExecContext(ctx, sql, args...)
+		if err != nil {
+			return 0, err
+		}
+		id, err = res.LastInsertId()
+		return id, err
+	})
 }

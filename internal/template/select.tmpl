@@ -157,53 +157,32 @@ func (b *{{$selectBuilder}}) Get(ctx context.Context) (*{{.TitleName}}, error) {
 
 // List 获取多条数据
 func (b *{{$selectBuilder}}) List(ctx context.Context) ([]*{{.TitleName}}, error) {
-  sql, args := b.SQL()
-  info := &queryInfo{
-    ctx: ctx,
-    table: b.table,
-    op: OpSelect,
-    query: sql,
-    fields: b.fields,
-    args: args,
-  }
-
-  err := b.db.runBeforeHooks(info)
-  if err != nil {
-    return nil, err
-  }
-  if info.modified {
-      b.fields = info.fields
-      b.table = info.table
-      ctx = info.ctx
-      sql, _ = b.SQL()
-      args = info.args
-  }
-
-	rows, err := b.db.ext.QueryxContext(ctx, sql, args...)
-	if err != nil {
-		return nil, err
-	}
-
-	res := make([]*{{$.TitleName}}, 0)
-	scanners := make([]interface{}, len(b.fields))
-	for rows.Next() {
-		m := &{{$.TitleName}}{}
-    for i, field := range b.fields {
-      switch field {
-        {{range $field := .Fields -}}
-        case "{{$field.SQLName}}":
-          scanners[i] = &m.{{$field.TitleName}}
-        {{end -}}
-      }
+  res := make([]*{{$.TitleName}}, 0)
+  e := new{{$selectEvent | titleCase}}(ctx, b)
+  return res, b.db.exec(e, func(ctx context.Context, sql string, args ...interface{}) (interface{}, error) {
+    rows, err := b.db.ext.QueryxContext(ctx, sql, args...)
+    if err != nil {
+      return nil, err
     }
-		if err := rows.Scan(scanners...); err != nil {
-			return nil, err
-		}
-		res = append(res, m)
-	}
 
-  info.value = res
-	return res, b.db.runAfterHooks(info)
+    scanners := make([]interface{}, len(b.fields))
+    for rows.Next() {
+      m := &{{$.TitleName}}{}
+      for i, field := range b.fields {
+        switch field {
+          {{range $field := .Fields -}}
+          case "{{$field.SQLName}}":
+            scanners[i] = &m.{{$field.TitleName}}
+          {{end -}}
+        }
+      }
+      if err := rows.Scan(scanners...); err != nil {
+        return nil, err
+      }
+      res = append(res, m)
+    }
+    return res, nil
+  })
 }
 
 func (b *{{$selectBuilder}}) Count(ctx context.Context) (int64, error) {
@@ -211,41 +190,23 @@ func (b *{{$selectBuilder}}) Count(ctx context.Context) (int64, error) {
   defer func() {
     b.fields = originFields
   }()
-
   b.Fields("COUNT(1) AS `count`")
-  sql, args := b.SQL()
-
-  info := &queryInfo{
-    ctx: ctx,
-    table: b.table,
-    op: OpSelect,
-    query: sql,
-    args: args,
-  }
-  err := b.db.runBeforeHooks(info)
-  if err != nil {
-    return 0, err
-  }
-  ctx = info.ctx
-  if info.modified {
-    b.table = info.table
-    sql, _ = b.SQL()
-    args = info.args
-  }
-
-	row := b.db.ext.QueryRowxContext(ctx, sql, args...)
-  if row.Err() != nil {
-    return 0, row.Err()
-  }
 
   var count int64
-  err = row.Scan(&count)
-  if err != nil {
-    return 0, err
-  }
+  e := new{{$selectEvent | titleCase}}(ctx, b)
+  return count, b.db.exec(e, func(ctx context.Context, sql string, args ...interface{}) (interface{}, error) {
+    row := b.db.ext.QueryRowxContext(ctx, sql, args...)
+    if row.Err() != nil {
+      return 0, row.Err()
+    }
 
-  info.value = count
-  return count, b.db.runAfterHooks(info)
+    err := row.Scan(&count)
+    if err != nil {
+      return 0, err
+    }
+
+    return count, nil
+  })
 }
 
 func (b *{{$selectBuilder}}) Page(ctx context.Context, page, pageSize int) ([]*{{.TitleName}}, int64, error) {

@@ -1,9 +1,13 @@
 {{- $insertBuilder := (print .TitleName "InsertBuilder") -}}
-{{- $updateBuilder := (print .TitleName "UpdateBuilder") -}}
 {{- $selectBuilder := (print .TitleName "SelectBuilder") -}}
+{{- $updateBuilder := (print .TitleName "UpdateBuilder") -}}
 {{- $deleteBuilder := (print .TitleName "DeleteBuilder") -}}
 {{- $whereBuilder := (print .TitleName "WhereBuilder") -}}
 {{- $orderBuilder := (print .TitleName "OrderBuilder") -}}
+{{- $insertEvent := (print .CamelName "InsertEvent") -}}
+{{- $selectEvent := (print .CamelName "SelectEvent") -}}
+{{- $updateEvent := (print .CamelName "UpdateEvent") -}}
+{{- $deleteEvent := (print .CamelName "deleteEvent") -}}
 {{- $db := (print .TitleName "DB") -}}
 {{- $table := (print .TitleName "Table") -}}
 {{- $fields := "" -}}

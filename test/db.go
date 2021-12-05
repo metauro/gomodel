@@ -18,12 +18,14 @@ type Tx struct {
 
 func NewDB(db *sqlx.DB) *DB {
 	return &DB{
+		db:      db,
 		Gomodel: NewGomodelDB(db),
 	}
 }
 
 func NewTx(tx *sqlx.Tx) *Tx {
 	return &Tx{
+		tx:      tx,
 		Gomodel: NewGomodelDB(tx),
 	}
 }
@@ -58,4 +60,8 @@ func (db *DB) BeginTxFn(ctx context.Context, opts *sql.TxOptions, fn func(ctx co
 	}
 
 	return nil
+}
+
+func (db *DB) SetErrorHandler(handler ErrorHandler) {
+	db.Gomodel.SetErrorHandler(handler)
 }

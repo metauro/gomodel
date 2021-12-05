@@ -14,11 +14,7 @@ type {{$whereBuilder}} struct {
 
 func new{{$whereBuilder | titleCase}}() *{{$whereBuilder}} {
   b := &{{$whereBuilder}}{}
-  {{if $.SoftDeleteColumn -}}
-  b.sb.WriteString("WHERE ({{$.SoftDeleteColumn}} IS NULL) AND ")
-  {{- else -}}
   b.sb.WriteString("WHERE ")
-  {{end -}}
   return b
 }
 

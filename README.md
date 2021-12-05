@@ -6,19 +6,6 @@ GoModel 是一个生成模型与CRUD相关代码的工具,目前仅支持 MySQL
 $ go install github.com/metauro/gomodel/cmd/gomodel@latest
 ```
 
-# 配置
-
-在`$HOME/.gomodel.toml`下配置以下内容
-
-```toml
-[mysql]
-username = "root"
-password = "root"
-host = "localhost"
-port = 3306
-database = "db"
-```
-
 # 创建表
 
 ```mysql
@@ -36,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `test`
 执行以下命令,选择要生成的表后回车
 
 ```bash
-$ gomodel gen
+$ gomodel gen -dsn "root:root@(localhost:3306)/database" -table test
 ```
 
 # 使用
@@ -47,32 +34,33 @@ $ gomodel gen
 package main
 
 import (
-	"github.com/metauro/gomodel"
+	"github.com/jmoiron/sqlx"
+	"mod/gomodel"
 )
 
 func main() {
-	db, err := gomodel.Open("mysql", "dsn")
-	if err != nil {
-		panic(err)
-	}
-	repo := model.NewTestRepo(db)
-	// 插入单条数据
-	repo.Insert(&model.Test{
-		Key: "a",
-	}).MustExec()
-	// 插入多条数据
-	repo.Insert(&model.Test{
-		Key: "a",
-	}, &model.Test{
-		Key: "b",
-	}).MustExec()
+	sqlDB, _ := sqlx.Open("mysql", "root:root@(localhost:3306)/database")
+	db := gomodel.NewDB(sqlDB)
+	ctx := context.Background
+	
+	// 插入数据
+	db.Test.Insert().Values(&gomodel.Test{}).Exec(ctx)
+	
+	// 批量插入数据
+	db.Test.Insert().Values(&gomodel.Test{}, &gomodel.Test{}).Exec(ctx)
+	
+	// 获取单条数据
+	db.Test.Select().Get(ctx)
+	
+	// 获取多条数据
+	db.Test.Select().List(ctx)
+	
 	// 更新数据
-	repo.Update().SetKey("update").WhereKeyEqual("a").MustExec()
-	// 查询一条数据
-	repo.Select().WhereKeyEqual("a").MustGet()
-	// 查询多条数据
-	repo.Select().MustSelect()
-	// 删除数据
-	repo.Delete().WhereKeyEqual("a").Limit(1).MustExec()
+	db.Test.Update().SetKey("test_key").Exec(ctx)
+	
+	// 删除 id=1 的数据
+	db.Test.Delete().Where(func(b *gomodel.TestWhereBuilder) {
+		b.WhereIdEQ(1)
+  }).Exec(ctx)
 }
 ```

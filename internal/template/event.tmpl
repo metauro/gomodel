@@ -1,0 +1,78 @@
+package {{.Pkg}}
+
+import "context"
+
+{{- $builders := newSlice $insertBuilder $selectBuilder $updateBuilder $deleteBuilder -}}
+{{- $ops := newSlice "OpInsert" "OpSelect" "OpUpdate" "OpDelete" -}}
+{{range $i, $event := newSlice $insertEvent $selectEvent $updateEvent $deleteEvent}}
+type {{$event}} struct {
+  *{{index $builders $i}}
+  ctx context.Context
+  sql string
+  args []interface{}
+  value interface{}
+}
+
+func new{{$event | titleCase}}(ctx context.Context, builder *{{index $builders $i}}) *{{$event}} {
+  sql, args := builder.SQL()
+  return &{{$event}}{
+    {{index $builders $i}}: builder,
+    ctx: ctx,
+    sql: sql,
+    args: args,
+  }
+}
+
+func (e *{{$event}}) Context() context.Context {
+	return e.ctx
+}
+
+func (e *{{$event}}) SetContext(ctx context.Context) {
+	e.ctx = ctx
+}
+
+func (e *{{$event}}) Table() string {
+	return e.table
+}
+
+func (e *{{$event}}) SetTable(table string) {
+	e.table = table
+  e.sql, _ = e.{{index $builders $i}}.SQL()
+}
+
+func (e *{{$event}}) Op() Op {
+  return {{index $ops $i}}
+}
+
+func (e *{{$event}}) SQL() string {
+  return e.sql
+}
+
+func (e *{{$event}}) Args() []interface{} {
+	return e.args
+}
+
+func (e *{{$event}}) Value() interface{} {
+	return e.value
+}
+
+func (e *{{$event}}) SetValue(value interface{}) {
+  e.value = value
+}
+{{end}}
+func (e *{{$insertEvent}}) Fields() []string {
+  return nil
+}
+
+func (e *{{$selectEvent}}) Fields() []string {
+  return e.fields
+}
+
+func (e *{{$updateEvent}}) Fields() []string {
+  return nil
+}
+
+func (e *{{$deleteEvent}}) Fields() []string {
+  return nil
+}
+

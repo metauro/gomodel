@@ -44,35 +44,14 @@ func (b *GomodelDeleteBuilder) SQL() (string, []interface{}) {
 }
 
 func (b *GomodelDeleteBuilder) Exec(ctx context.Context) (int64, error) {
-	sql, args := b.SQL()
-	info := &queryInfo{
-		ctx:   ctx,
-		table: b.table,
-		op:    OpDelete,
-		query: sql,
-		args:  args,
-	}
-	err := b.db.runBeforeHooks(info)
-	if err != nil {
-		return 0, err
-	}
-	ctx = info.ctx
-
-	if info.modified {
-		b.table = info.table
-		sql, _ = b.SQL()
-		args = info.args
-	}
-
-	res, err := b.db.ext.ExecContext(ctx, sql, args...)
-	if err != nil {
-		return 0, err
-	}
-	ra, err := res.RowsAffected()
-	if err != nil {
-		return 0, err
-	}
-
-	info.value = ra
-	return ra, b.db.runAfterHooks(info)
+	var ra int64
+	e := newGomodeldeleteEvent(ctx, b)
+	return ra, b.db.exec(e, func(ctx context.Context, sql string, args ...interface{}) (interface{}, error) {
+		res, err := b.db.ext.ExecContext(ctx, sql, args...)
+		if err != nil {
+			return 0, err
+		}
+		ra, err = res.RowsAffected()
+		return ra, nil
+	})
 }

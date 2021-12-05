@@ -20,6 +20,7 @@ type Tx struct {
 
 func NewDB(db *sqlx.DB) *DB {
   return &DB{
+    db: db,
     {{range .}}{{.TitleName}}: New{{print .TitleName "DB"}}(db),
     {{end -}}
   }
@@ -27,6 +28,7 @@ func NewDB(db *sqlx.DB) *DB {
 
 func NewTx(tx *sqlx.Tx) *Tx {
   return &Tx{
+    tx: tx,
 {{range .}}{{.TitleName}}: New{{print .TitleName "DB"}}(tx),
 {{end -}}
   }
@@ -62,4 +64,9 @@ func (db *DB) BeginTxFn(ctx context.Context, opts *sql.TxOptions, fn func(ctx co
 	}
 
   return nil
+}
+
+func (db *DB) SetErrorHandler(handler ErrorHandler) {
+{{range .}}db.{{.TitleName}}.SetErrorHandler(handler)
+{{end -}}
 }

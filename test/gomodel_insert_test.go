@@ -58,21 +58,23 @@ func TestGomodelInsertBuilder(t *testing.T) {
 			So(args[0], ShouldResemble, null.NewBool(false, false))
 			So(args[1], ShouldResemble, null.NewUint(1, true))
 		})
+
+		Convey("Should build correct statement on insert multiple values", func() {
+			sql, args := newGomodelInsertBuilder(nil).
+				Fields(GomodelFieldChar, GomodelFieldVarchar).
+				Values(&Gomodel{}, &Gomodel{}).
+				SQL()
+			So(
+				sql,
+				ShouldEqual,
+				fmt.Sprintf(
+					"INSERT INTO `%s` (%s,%s) VALUES (?,?),(?,?)",
+					GomodelTable,
+					GomodelFieldChar,
+					GomodelFieldVarchar,
+				),
+			)
+			So(args, ShouldHaveLength, 4)
+		})
 	})
-}
-
-func BenchmarkGomodelInsertBuilder(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		newGomodelInsertBuilder(nil).
-			Fields(GomodelFieldInt, GomodelFieldBigint, GomodelFieldFloat).
-			Values(&Gomodel{}, &Gomodel{}).
-			SQL()
-	}
-}
-
-func BenchmarkInsertRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_ = fmt.Sprintf("INSERT INTO %s (%s,%s,%s) VALUES (?,?,?),(?,?,?)", GomodelTable, GomodelFieldInt,
-			GomodelFieldBigint, GomodelFieldFloat)
-	}
 }

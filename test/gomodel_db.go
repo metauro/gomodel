@@ -1,17 +1,20 @@
 package test
 
 import (
+	"context"
 	"github.com/jmoiron/sqlx"
 )
 
 type GomodelDB struct {
-	ext   sqlx.ExtContext
-	hooks []Hook
+	ext         sqlx.ExtContext
+	hooks       []Hook
+	handleError ErrorHandler
 }
 
 func NewGomodelDB(db sqlx.ExtContext) *GomodelDB {
 	return &GomodelDB{
-		ext: db,
+		ext:         db,
+		handleError: defaultErrorHandler,
 	}
 }
 
@@ -37,22 +40,33 @@ func (db *GomodelDB) Use(hooks ...Hook) {
 	}
 }
 
-func (db *GomodelDB) runBeforeHooks(info *queryInfo) error {
-	for _, hook := range db.hooks {
-		err := hook.Before(info)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (db *GomodelDB) SetErrorHandler(handler ErrorHandler) {
+	db.handleError = handler
 }
 
-func (db *GomodelDB) runAfterHooks(info *queryInfo) error {
+func (db *GomodelDB) exec(
+	e event,
+	execute func(ctx context.Context, sql string, args ...interface{}) (interface{}, error),
+) error {
 	for _, hook := range db.hooks {
-		err := hook.After(info)
+		err := hook.Before(e)
 		if err != nil {
 			return err
 		}
 	}
+
+	value, err := execute(e.Context(), e.SQL(), e.Args()...)
+	if err != nil {
+		return db.handleError(err)
+	}
+
+	e.SetValue(value)
+	for _, hook := range db.hooks {
+		err := hook.After(e)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
